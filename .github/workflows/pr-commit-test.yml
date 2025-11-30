@@ -3,6 +3,7 @@ name: Check pull request commits
 on:
   pull_request:
     types: [opened, synchronize]
+  workflow_dispatch:
 
 jobs:
   check-file-locations:

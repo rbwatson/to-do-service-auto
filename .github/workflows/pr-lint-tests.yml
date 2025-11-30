@@ -3,6 +3,7 @@ name: Lint changed markdown files
 on:
   pull_request:
     types: [opened, synchronize]
+  workflow_dispatch:
 
 jobs:
   get-changed-files:
@@ -29,6 +30,14 @@ jobs:
           echo "Changed files count: ${{ steps.get-changed-files-list.outputs.all_changed_files_count }}"
           echo "Changed files:"
           echo "${{ steps.get-changed-files-list.outputs.all_changed_files }}" | tr ',' '\n'
+
+      - name: List linter exceptions
+        run: |
+          changed_files=${{ steps.get-changed-files-list.outputs.all_changed_files }}
+          IFS=',' read -ra files_array <<< "$changed_files"
+          for file in "${files_array[@]}"; do
+            python3 tools/list-linter-exceptions.py --action "$file"
+          done
 
   markdown-files-lint:
     name: Lint changed markdown files
@@ -80,5 +89,3 @@ jobs:
           separator: ','
           # assumes that config file is .vale.ini
           fail_on_error: true
-        # run: |
-        #   vale --config=.vale.ini --minAlertLevel=suggestion ${{ needs.get-changed-files.outputs.changed_files }}
