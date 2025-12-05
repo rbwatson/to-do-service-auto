@@ -52,6 +52,7 @@ jobs:
           changed_files=${{ needs.get-changed-files.outputs.changed_files_list }}
           IFS=',' read -ra files_array <<< "$changed_files"
           for file in "${files_array[@]}"; do
+            echo "**Running markdown-survey.py on: $file"
             python3 tools/markdown-survey.py "$file" --action
           done
 
