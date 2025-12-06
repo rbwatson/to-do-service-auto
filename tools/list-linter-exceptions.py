@@ -34,6 +34,12 @@ def list_vale_exceptions(content):
     """
     Scan for Vale and markdownlint exception tags.
     
+    Detects:
+    - Vale specific rules: <!-- vale RuleName = NO -->
+    - Vale global disable: <!-- vale off -->
+    - Markdownlint specific rules: <!-- markdownlint-disable MD### -->
+    - Markdownlint global disable: <!-- markdownlint-disable -->
+    
     Args:
         content: Markdown file content as string
     
@@ -49,30 +55,54 @@ def list_vale_exceptions(content):
     }
     
     # Patterns
-    # Vale: <!-- vale RuleName = NO -->
-    vale_pattern = r'<!--\s*vale\s+([A-Za-z0-9.]+)\s*=\s*NO\s*-->'
+    # Vale: <!-- vale RuleName = NO --> (specific rule)
+    vale_specific_pattern = r'<!--\s*vale\s+([A-Za-z0-9.]+)\s*=\s*NO\s*-->'
     
-    # Markdownlint: <!-- markdownlint-disable MD### -->
-    markdown_pattern = r'<!--\s*markdownlint-disable\s+(MD\d{3})\s*-->'
+    # Vale: <!-- vale off --> (global disable)
+    vale_global_pattern = r'<!--\s*vale\s+off\s*-->'
+    
+    # Markdownlint: <!-- markdownlint-disable MD### --> (specific rule)
+    markdown_specific_pattern = r'<!--\s*markdownlint-disable\s+(MD\d{3})\s*-->'
+    
+    # Markdownlint: <!-- markdownlint-disable --> (global disable)
+    markdown_global_pattern = r'<!--\s*markdownlint-disable\s*-->'
     
     lines = content.split('\n')
     
     for line_num, line in enumerate(lines, start=1):
-        # Check for Vale exceptions
-        vale_match = re.search(vale_pattern, line)
-        if vale_match:
+        # Check for Vale specific rule exceptions
+        vale_specific_match = re.search(vale_specific_pattern, line)
+        if vale_specific_match:
             exceptions['vale'].append({
                 'line': line_num,
-                'rule': vale_match.group(1),
+                'rule': vale_specific_match.group(1),
                 'full_match': line.strip()
             })
         
-        # Check for markdownlint exceptions
-        md_match = re.search(markdown_pattern, line)
-        if md_match:
+        # Check for Vale global disable
+        vale_global_match = re.search(vale_global_pattern, line)
+        if vale_global_match:
+            exceptions['vale'].append({
+                'line': line_num,
+                'rule': 'vale-off (global)',
+                'full_match': line.strip()
+            })
+        
+        # Check for markdownlint specific rule exceptions
+        md_specific_match = re.search(markdown_specific_pattern, line)
+        if md_specific_match:
             exceptions['markdownlint'].append({
                 'line': line_num,
-                'rule': md_match.group(1),
+                'rule': md_specific_match.group(1),
+                'full_match': line.strip()
+            })
+        
+        # Check for markdownlint global disable
+        md_global_match = re.search(markdown_global_pattern, line)
+        if md_global_match:
+            exceptions['markdownlint'].append({
+                'line': line_num,
+                'rule': 'markdownlint-disable (global)',
                 'full_match': line.strip()
             })
     
