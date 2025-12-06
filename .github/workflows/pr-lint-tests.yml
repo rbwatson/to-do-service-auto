@@ -37,7 +37,7 @@ jobs:
         run: |
           echo "Testing changed files for unsafe filenames..."
           # read changed files from env variable that is read from within the script
-          python3 - tools/test-filenames.py -action
+          python3 tools/test-filenames.py --action
 
       - name: List linter exceptions
         run: |
