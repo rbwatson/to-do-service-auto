@@ -108,6 +108,8 @@ Environment:
     
     # Get changed files from environment
     files = get_changed_files()
+    for f in files:
+        log(f"Changed file to check: {f}", "info")
     
     if not files:
         log("No changed files reported", "info")
