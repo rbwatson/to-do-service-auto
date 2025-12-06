@@ -57,11 +57,10 @@ jobs:
 
       - name: Count markdown notations
         run: |
-          changed_files=${{ needs.get-changed-files.outputs.changed_files_list }}
-          IFS=',' read -ra files_array <<< "$changed_files"
-          for file in "${files_array[@]}"; do
-            python3 tools/markdown-survey.py "$file" --action
-          done
+          changed_files="${{ needs.get-changed-files.outputs.changed_files_list }}"
+          # Convert comma-separated to space-separated
+          files_space="${changed_files//,/ }"
+          python3 tools/markdown-survey.py --action $files_space
 
       - name: Run MarkdownLint on
         uses: DavidAnson/markdownlint-cli2-action@v21
