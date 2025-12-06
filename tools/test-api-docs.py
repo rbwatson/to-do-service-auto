@@ -13,10 +13,10 @@ Arguments:
               Default: .github/schemas/front-matter-schema.json
     
 Examples:
-    test-api-docs.py docs/api/users-get-all-users.md
-    test-api-docs.py --action docs/api/users-get-all-users.md
-    test-api-docs.py --action all docs/api/users-get-all-users.md
-    test-api-docs.py --action error docs/api/users-get-all-users.md
+    test-api-docs.py docs/api/users-get-all-users.md --schema .schemas/front-matter-schema.json
+    test-api-docs.py docs/api/users-get-all-users.md --action --schema .schemas/front-matter-schema.json
+    test-api-docs.py docs/api/users-get-all-users.md --action all --schema .schemas/front-matter-schema.json
+    test-api-docs.py docs/api/users-get-all-users.md --action error --schema .schemas/front-matter-schema.json
 """
 
 import re
@@ -80,13 +80,14 @@ def extract_curl_command(content, example_name):
     flexible_words = [rf'`?{word}`?' for word in words]
     flexible_pattern = r'\s+'.join(flexible_words)
     
-    # Look for heading with "request" (h2 or h3)
-    heading_pattern = rf'^##\#?\s+{flexible_pattern}\s+request'
+    # Look for heading with "request" (h3 or h4)
+    heading_pattern = rf'^###\#?\s+{flexible_pattern}\s+request'
     
     lines = content.split('\n')
     in_example = False
     in_code_block = False
-    curl_command = []
+    curl_cmd_elements = []
+    curl_cmd_string = ""
     
     for i, line in enumerate(lines):
         # Check if we found the heading
@@ -107,14 +108,18 @@ def extract_curl_command(content, example_name):
             
             # Collect curl command lines
             if in_code_block:
-                curl_command.append(line)
+                curl_cmd_elements.append(line)
             
             # Stop if we hit another heading
             if line.startswith('#'):
                 break
     
-    if curl_command:
-        return '\n'.join(curl_command).strip()
+    if curl_cmd_elements:
+        curl_cmd_string = '\n'.join(curl_cmd_elements).strip()
+        # Add -i flag if not present to get headers
+        if '-i' not in curl_cmd_string and '--include' not in curl_cmd_string:
+            curl_cmd_string = curl_cmd_string.replace('curl', 'curl -i', 1)
+        return curl_cmd_string
     
     return None
 
@@ -136,8 +141,8 @@ def extract_expected_response(content, example_name):
     flexible_words = [rf'`?{word}`?' for word in words]
     flexible_pattern = r'\s+'.join(flexible_words)
     
-    # Look for heading with "response" (h2 or h3)
-    heading_pattern = rf'^##\#?\s+{flexible_pattern}\s+response'
+    # Look for heading with "response" (h3 or h4)
+    heading_pattern = rf'^###\#?\s+{flexible_pattern}\s+response'
     
     lines = content.split('\n')
     in_example = False
@@ -210,6 +215,7 @@ def execute_curl(curl_command):
             parts = output.split('\r\n\r\n', 1)
         
         if len(parts) < 2:
+            print (f"ERROR in response buffer:\n{result.stdout}")  
             return None, None, "Could not parse response"
         
         headers_text = parts[0]
