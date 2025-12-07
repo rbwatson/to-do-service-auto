@@ -242,14 +242,14 @@ jobs:
         run: |
           files="${{ needs.discover-changes.outputs.all_md_files }}"
           files_space="${files//,/ }"
-          python3 tools/list-linter-exceptions.py --action $files_space
+          python3 tools/list-linter-exceptions.py $files_space --action
       
       # Markdown survey (Phase 1 optimized)
       - name: Survey markdown
         run: |
           files="${{ needs.discover-changes.outputs.all_md_files }}"
           files_space="${files//,/ }"
-          python3 tools/markdown-survey.py --action $files_space
+          python3 tools/markdown-survey.py $files_space --action
       
       # MarkdownLint
       - name: Run MarkdownLint
