@@ -356,19 +356,18 @@ jobs:
           for file in ${{ needs.discover-changes.outputs.docs_md_files }}; do
             if grep -q "^test:" "$file" 2>/dev/null; then
               DB_PATH=$(python3 -c "
-import yaml, re
-with open('$file', 'r') as f:
-    content = f.read()
-fm_match = re.match(r'^---\s*\n(.*?)\n---\s*\n', content, re.DOTALL)
-if fm_match:
-    try:
-        metadata = yaml.safe_load(fm_match.group(1))
-        test_config = metadata.get('test', {})
-        db_path = test_config.get('local_database', '/api/to-do-db-source.json')
-        print(db_path.lstrip('/'))
-    except: pass
-" 2>/dev/null)
-              
+                import yaml, re
+                with open('$file', 'r') as f:
+                    content = f.read()
+                fm_match = re.match(r'^---\s*\n(.*?)\n---\s*\n', content, re.DOTALL)
+                if fm_match:
+                    try:
+                        metadata = yaml.safe_load(fm_match.group(1))
+                        test_config = metadata.get('test', {})
+                        db_path = test_config.get('local_database', '/api/to-do-db-source.json')
+                        print(db_path.lstrip('/'))
+                    except: pass
+                " 2>/dev/null)
               if [ -n "$DB_PATH" ]; then
                 echo "test_db=$DB_PATH" >> $GITHUB_OUTPUT
                 echo "Using test database: $DB_PATH"
