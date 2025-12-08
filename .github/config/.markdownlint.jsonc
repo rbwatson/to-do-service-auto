@@ -3,5 +3,6 @@
   "MD013": { "line_length": 100},
   "MD036": false,
   "MD049": { "style": "underscore" },
-  "MD050": { "style": "asterisk" }
+  "MD050": { "style": "asterisk" },
+  "MD060": { "style": "compact" }
 }
