@@ -185,7 +185,11 @@ jobs:
           fi
           sudo ln -sf ~/.vale/vale /usr/local/bin/vale
           vale --version
-      
+
+      - name: Show Vale config  
+        run: |
+          vale ls-config
+
       - name: Run Vale
         uses: errata-ai/vale-action@v2.1.1
         with:
