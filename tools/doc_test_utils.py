@@ -15,7 +15,7 @@ from typing import Optional, Dict, Tuple, Any
 
 import yaml
 
-å
+
 def parse_front_matter(content: str) -> Optional[Dict[str, Any]]:
     """
     Extract and parse YAML front matter from markdown content.
@@ -52,6 +52,12 @@ def read_markdown_file(filepath: Path) -> Optional[str]:
         
     Returns:
         File content as string, or None if error occurred
+        
+    Example:
+        >>> from pathlib import Path
+        >>> content = read_markdown_file(Path('docs/example.md'))
+        >>> if content:
+        ...     print(f"Read {len(content)} characters")
         
     Note:
         Errors are logged but not raised. Caller should check for None.

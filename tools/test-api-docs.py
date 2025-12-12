@@ -114,6 +114,18 @@ def extract_curl_command(content, server_url, example_name):
         
     Returns:
         str: The curl command, or None if not found
+
+    Example:
+       >>> content = '''
+       ... ### GET example request
+       ... ```bash
+       ... curl {server_url}/api/users
+       ... ```
+       ... '''
+       >>> cmd = extract_curl_command(content, 'http://localhost:3000', 'GET example')
+       >>> print(cmd)
+       curl -i http://localhost:3000/api/users
+
     """
     # Escape the example name but allow backticks around words
     # Pattern like "GET example" should match "`GET` example", "GET `example`", or "`GET` `example`"
@@ -180,6 +192,18 @@ def extract_expected_response(content, example_name):
         
     Returns:
         dict: Parsed JSON response, or None if not found
+
+    Example:
+       >>> content = '''
+       ... ### GET example response
+       ... ```json
+       ... {"users": [{"id": 1, "name": "Alice"}]}
+       ... ```
+       ... '''
+       >>> response = extract_expected_response(content, 'GET example')
+       >>> print(response['users'][0]['name'])
+       Alice
+
     """
     # Similar flexible pattern as curl extraction
     escaped_name = re.escape(example_name)
@@ -238,6 +262,14 @@ def execute_curl(curl_command):
         
     Returns:
         tuple: (status_code, headers, body) or (None, None, error_message)
+    
+    Example:
+       >>> status, headers, body = execute_curl('curl -i http://localhost:3000/api/users')
+       >>> if status:
+       ...     print(f"Status: {status}")
+       ...     data = json.loads(body)
+       Status: 200
+
     """
     try:
         # Run curl with -i to get headers
@@ -295,6 +327,16 @@ def compare_json_objects(actual, expected, path=""):
         
     Returns:
         tuple: (are_equal, differences_list)
+    
+    Example:
+       >>> expected = {"name": "Alice", "age": 30}
+       >>> actual = {"name": "Alice", "age": 31}
+       >>> are_equal, diffs = compare_json_objects(actual, expected)
+       >>> print(f"Equal: {are_equal}")
+       >>> print(f"Differences: {diffs}")
+       Equal: False
+       Differences: ['age: Value mismatch - expected 30, got 31']
+
     """
     differences = []
     
@@ -353,6 +395,20 @@ def test_example(content, test_config, example_name, expected_codes, file_path, 
         
     Returns:
         bool: True if test passed, False otherwise
+
+    Example:
+       >>> test_config = {'server_url': 'http://localhost:3000'}
+       >>> passed = test_example(
+       ...     content=doc_content,
+       ...     test_config=test_config,
+       ...     example_name='GET example',
+       ...     expected_codes=[200],
+       ...     file_path='docs/api.md',
+       ...     use_actions=False,
+       ...     action_level='warning'
+       ... )
+       >>> print(f"Test {'passed' if passed else 'failed'}")
+
     """
     see_also_the_log = " See the 'Test changed documentation files' entry in the log for more info."
     
@@ -441,6 +497,17 @@ def test_file(file_path, schema_path, use_actions=False, action_level="warning")
         
     Returns:
         tuple: (total_tests, passed_tests, failed_tests)
+    
+    Example:
+       >>> total, passed, failed = test_file(
+       ...     'docs/api/users.md',
+       ...     '.github/schemas/front-matter-schema.json',
+       ...     use_actions=False,
+       ...     action_level='warning'
+       ... )
+       >>> print(f"Ran {total} tests: {passed} passed, {failed} failed")
+       Ran 3 tests: 3 passed, 0 failed
+
     """
     log(f"\n{'#'*60}")
     log(f"# Testing file: {file_path}")

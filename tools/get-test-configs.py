@@ -20,7 +20,7 @@ Examples:
     get-test-configs.py docs/api/*.md
     get-test-configs.py docs/api/*.md --output json
     get-test-configs.py docs/api/*.md --output shell
-    get-test-configs.py --action docs/api/*.md
+    get-test-configs.py [--action [level]] docs/api/*.md
 """
 
 import sys

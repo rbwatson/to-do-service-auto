@@ -59,6 +59,13 @@ def load_schema(schema_path: str) -> Optional[Dict[str, Any]]:
     Note:
         Schemas are cached after first load. Use clear_schema_cache()
         to force reload.
+
+    Example:
+        >>> schema = load_schema('.github/schemas/front-matter-schema.json')
+        >>> if schema:
+        ...     required_fields = schema.get('required', [])
+        ...     print(f"Schema has {len(required_fields)} required fields")
+
     """
     # Check cache first
     if schema_path in _SCHEMA_CACHE:
@@ -95,6 +102,16 @@ def categorize_validation_error(error: Any, schema: Dict[str, Any]) -> Tuple[boo
     Note:
         Required field errors are critical and should fail validation.
         Optional field errors are warnings that don't fail validation.
+
+    Example:
+        >>> from jsonschema import Draft7Validator
+        >>> schema = {'type': 'object', 'required': ['name']}
+        >>> validator = Draft7Validator(schema)
+        >>> errors = list(validator.iter_errors({'age': 25}))
+        >>> is_required, msg = categorize_validation_error(errors[0], schema)
+        >>> print(f"Required: {is_required}, Message: {msg}")
+        Required: True, Message: Required field missing: name
+
     """
     is_required = False
     
