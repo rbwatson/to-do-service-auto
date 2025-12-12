@@ -3,11 +3,26 @@
 Help documentation URLs for error messages and user guidance.
 
 This module centralizes all help URLs used across the documentation testing tools.
-Update URLs here to change them throughout all tools and workflows.
+
+URLs can be configured via environment variables (typically set by GitHub Actions)
+or fall back to hardcoded defaults for local development.
+
+Environment Variables:
+    WIKI_BASE: Base URL for the wiki (overrides default)
+
+Usage:
+    from help_urls import HELP_URLS
+    
+    log(f"Help: {HELP_URLS['example_format']}", "info")
 """
 
-# Base wiki URL
-WIKI_BASE_URL = "https://github.com/UWC2-APIDOC/to-do-service-auto/wiki"
+import os
+
+# Base wiki URL - use environment variable if available, otherwise use default
+WIKI_BASE_URL = os.environ.get(
+    'WIKI_BASE',
+    "https://github.com/UWC2-APIDOC/to-do-service-auto/wiki"
+)
 
 # Help page URLs
 HELP_URLS = {
@@ -21,7 +36,7 @@ HELP_URLS = {
     
     # Documentation format requirements
     'example_format': f"{WIKI_BASE_URL}/Example-Format",
-    'front_matter': f"{WIKI_BASE_URL}/Frontmatter-Format",
+    'front_matter': f"{WIKI_BASE_URL}/Front-Matter-Format",
 }
 
 # For backward compatibility - direct access to individual URLs
