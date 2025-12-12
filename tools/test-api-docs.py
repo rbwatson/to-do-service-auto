@@ -25,12 +25,13 @@ import json
 import sys
 import argparse
 from pathlib import Path
+from typing import Optional, Tuple, List
 
 from doc_test_utils import read_markdown_file, parse_front_matter, log
 from schema_validator import validate_front_matter_schema
 
 
-def parse_testable_entry(entry):
+def parse_testable_entry(entry: str) -> Tuple[Optional[str], Optional[List[int]]]:
     """
     Parse a testable entry into example name and expected status codes.
     
@@ -40,25 +41,66 @@ def parse_testable_entry(entry):
         entry: Testable entry string from front matter
         
     Returns:
-        tuple: (example_name, expected_codes)
+        Tuple of (example_name, expected_codes)
+        Returns (None, None) if entry is invalid or cannot be parsed
         
     Examples:
         >>> parse_testable_entry("GET example")
         ('GET example', [200])
+        
         >>> parse_testable_entry("POST example / 201")
         ('POST example', [201])
+        
         >>> parse_testable_entry("PUT example / 200,204")
         ('PUT example', [200, 204])
+        
+        >>> parse_testable_entry("Invalid / abc")
+        (None, None)
+        
+        >>> parse_testable_entry("")
+        (None, None)
     """
-    parts = entry.split('/')
-    example_name = parts[0].strip()
+    # Early return for empty or whitespace-only entries
+    if not entry or not entry.strip():
+        return None, None
     
-    if len(parts) > 1:
-        expected_codes = [int(code.strip()) for code in parts[1].split(',')]
-    else:
-        expected_codes = [200]
-    
-    return example_name, expected_codes
+    try:
+        parts = entry.split('/')
+        example_name = parts[0].strip()
+        
+        # Validate example name is not empty
+        if not example_name:
+            return None, None
+        
+        # Parse expected status codes
+        if len(parts) > 1:
+            code_str = parts[1].strip()
+            if not code_str:
+                # Has '/' but no codes specified - invalid
+                return None, None
+            
+            expected_codes = []
+            for code in code_str.split(','):
+                code = code.strip()
+                if not code:
+                    # Empty code in list
+                    return None, None
+                expected_codes.append(int(code))
+        else:
+            # No status codes specified, default to 200
+            expected_codes = [200]
+        
+        return example_name, expected_codes
+        
+    except ValueError:
+        # int() conversion failed - non-numeric status code
+        return None, None
+    except IndexError:
+        # Should not happen with split, but handle defensively
+        return None, None
+    except Exception:
+        # Catch any other unexpected errors
+        return None, None
 
 
 def extract_curl_command(content, server_url, example_name):
