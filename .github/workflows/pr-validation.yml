@@ -9,6 +9,16 @@ permissions:
   contents: read
   pull-requests: read
 
+# Centralized help documentation URLs
+env:
+  WIKI_BASE_URL: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki
+  HELP_FILE_LOCATIONS: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/File-Locations
+  HELP_SQUASHING_COMMITS: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Squashing-Commits
+  HELP_MERGE_COMMITS: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Avoiding-Merge-Commits
+  HELP_BRANCH_UPDATE: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Updating-Your-Branch
+  HELP_EXAMPLE_FORMAT: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Example-Format
+  HELP_FRONT_MATTER: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Frontmatter-Format
+
 jobs:
   # ============================================================
   # STAGE 0: Discover Changed Files
@@ -248,9 +258,10 @@ jobs:
           for file in ${{ needs.discover-changes.outputs.docs_md_files }}; do
             # Check for front matter skip comment
             if grep -qi "<!-- front matter not required -->" "$file" 2>/dev/null; then
-              # Error and fail if file is in /docs directory
+              # Error if file is in /docs directory
               if [[ "$file" == docs/* ]]; then
                 echo "::error file=$file::Front matter is required for files in /docs directory"
+                echo "Help: $HELP_FRONT_MATTER"
                 VALIDATION_FAILED=true
                 continue
               fi
@@ -328,9 +339,10 @@ jobs:
           for file in ${{ needs.discover-changes.outputs.docs_md_files }}; do
             # Check for front matter skip comment
             if grep -qi "<!-- front matter not required -->" "$file" 2>/dev/null; then
-              # Error and fail if file is in /docs directory
+              # Error if file is in /docs directory
               if [[ "$file" == docs/* ]]; then
                 echo "::error file=$file::Front matter is required for files in /docs directory"
+                echo "Help: $HELP_FRONT_MATTER"
                 FAILED_TESTS=$((FAILED_TESTS + 1))
                 FAILED_FILES="$FAILED_FILES $file"
                 continue
@@ -488,7 +500,7 @@ jobs:
               core.setFailed(`Only files in /docs/ and /assignments/ can be modified by students.`);
               console.log('Unauthorized files changed:');
               console.log('${{ needs.discover-changes.outputs.unauthorized_files }}'.split(' ').join('\n'));
-              console.log('Help: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/File-Locations');
+              console.log('Help: ${{ env.HELP_FILE_LOCATIONS }}');
             }
       
       # Check if branch is up to date
@@ -501,7 +513,7 @@ jobs:
           
           if ! git merge-base --is-ancestor $BASE_SHA $HEAD_SHA; then
             echo "::warning::PR branch not up to date. Consider rebasing."
-            echo "Help: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Updating-Your-Branch"
+            echo "Help: $HELP_BRANCH_UPDATE"
           else
             echo "Branch is up to date"
           fi
@@ -519,13 +531,13 @@ jobs:
           
           if [ $COMMIT_COUNT -ne 1 ]; then
             echo "::error::PR must contain exactly one commit; found $COMMIT_COUNT"
-            echo "Help: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Squashing-Commits"
+            echo "Help: $HELP_SQUASHING_COMMITS"
             FAILED=true
           fi
           
           if [ $MERGE_COMMITS -gt 0 ]; then
             echo "::error::PR contains merge commits; found $MERGE_COMMITS"
-            echo "Help: https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Avoiding-Merge-Commits"
+            echo "Help: $HELP_MERGE_COMMITS"
             FAILED=true
           fi
           

@@ -15,6 +15,9 @@ from typing import Optional, Dict, Tuple, Any
 
 import yaml
 
+# Import help URLs from centralized config
+from help_urls import HELP_URLS
+
 
 def parse_front_matter(content: str) -> Optional[Dict[str, Any]]:
     """
@@ -55,7 +58,7 @@ def read_markdown_file(filepath: Path) -> Optional[str]:
         
     Example:
         >>> from pathlib import Path
-        >>> content = read_markdown_file(Path('docs/example.md'))
+        >>> content = read_markdown_file(Path('README.md'))
         >>> if content:
         ...     print(f"Read {len(content)} characters")
         
@@ -140,7 +143,7 @@ def log(message: str,
     Print a message to console and optionally output GitHub Actions annotation.
     
     This function provides unified logging for all documentation test tools.
-    It supports console output with icons and optional GitHub Actions annotations
+    It supports console output with labels and optional GitHub Actions annotations
     based on message severity and filtering level.
     
     Args:
@@ -160,7 +163,7 @@ def log(message: str,
             - 'error': Output only error annotations
     
     Console output:
-        Always outputs to console with appropriate icon prefix.
+        Always outputs to console with appropriate label prefix.
         
     GitHub Actions annotation output:
         Only outputs if use_actions=True AND message level meets threshold:

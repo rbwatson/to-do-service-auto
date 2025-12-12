@@ -22,7 +22,7 @@ import json
 from pathlib import Path
 from typing import Optional, Dict, Tuple, List, Any
 
-from doc_test_utils import log
+from doc_test_utils import log, HELP_URLS
 
 # Try to import jsonschema
 try:
@@ -56,16 +56,15 @@ def load_schema(schema_path: str) -> Optional[Dict[str, Any]]:
     Returns:
         Schema dictionary, or None if loading fails
         
-    Note:
-        Schemas are cached after first load. Use clear_schema_cache()
-        to force reload.
-
     Example:
         >>> schema = load_schema('.github/schemas/front-matter-schema.json')
         >>> if schema:
         ...     required_fields = schema.get('required', [])
         ...     print(f"Schema has {len(required_fields)} required fields")
-
+        
+    Note:
+        Schemas are cached after first load. Use clear_schema_cache()
+        to force reload.
     """
     # Check cache first
     if schema_path in _SCHEMA_CACHE:
@@ -99,10 +98,6 @@ def categorize_validation_error(error: Any, schema: Dict[str, Any]) -> Tuple[boo
     Returns:
         Tuple of (is_required_error, error_message)
         
-    Note:
-        Required field errors are critical and should fail validation.
-        Optional field errors are warnings that don't fail validation.
-
     Example:
         >>> from jsonschema import Draft7Validator
         >>> schema = {'type': 'object', 'required': ['name']}
@@ -111,7 +106,10 @@ def categorize_validation_error(error: Any, schema: Dict[str, Any]) -> Tuple[boo
         >>> is_required, msg = categorize_validation_error(errors[0], schema)
         >>> print(f"Required: {is_required}, Message: {msg}")
         Required: True, Message: Required field missing: name
-
+        
+    Note:
+        Required field errors are critical and should fail validation.
+        Optional field errors are warnings that don't fail validation.
     """
     is_required = False
     
@@ -194,7 +192,7 @@ def validate_front_matter_schema(
     """
     # Check if jsonschema is available
     if not JSONSCHEMA_AVAILABLE:
-        log("jsonschema library not installed. Run: pip install jsonschema", 
+        log("jsonschema library not installed; run: pip install jsonschema", 
             "warning", file_path, None, use_actions, action_level)
         return True, False, [], []
     
@@ -238,6 +236,7 @@ def validate_front_matter_schema(
         log("Front matter validation errors found:", "error", file_path, None, use_actions, action_level)
         for error_msg in errors:
             log(f"  - {error_msg}", "error", file_path, None, use_actions, action_level)
+        log(f"📖 Help: {HELP_URLS['front_matter']}", "info")
     
     # Report warnings
     if warnings:
@@ -275,6 +274,8 @@ def validate_with_default_schema(
     Example:
         >>> metadata = {'layout': 'default', 'title': 'Test', 'description': 'A test page'}
         >>> is_valid, _, _, _ = validate_with_default_schema(metadata)
+        >>> if is_valid:
+        ...     print("Front matter is valid")
     """
     default_schema_path = ".github/schemas/front-matter-schema.json"
     return validate_front_matter_schema(
