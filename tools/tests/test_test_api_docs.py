@@ -360,7 +360,7 @@ def test_compare_json_objects_different():
     print("  ✓ All difference detection tests passed")
 
 
-def test_validate_frontmatter_with_jsonschema():
+def test_validate_front_matter_with_jsonschema():
     """Test front matter validation when jsonschema is available."""
     print("\n" + "="*60)
     print("TEST: validate_front_matter_schema() with jsonschema")
@@ -375,7 +375,7 @@ def test_validate_frontmatter_with_jsonschema():
         return
     
     test_data_dir = Path(__file__).parent / "test_data"
-    schema_path = test_data_dir / "valid_frontmatter_schema.json"
+    schema_path = test_data_dir / "valid_front_matter_schema.json"
     
     if not schema_path.exists():
         print(f"  SKIPPED: Schema file not found at {schema_path}")
@@ -424,7 +424,7 @@ def test_validate_frontmatter_with_jsonschema():
     print("  ✓ All validation tests passed")
 
 
-def test_validate_frontmatter_without_jsonschema():
+def test_validate_front_matter_without_jsonschema():
     """Test front matter validation gracefully handles missing jsonschema."""
     print("\n" + "="*60)
     print("TEST: validate_front_matter_schema() without jsonschema")
@@ -513,8 +513,8 @@ def run_all_tests():
         test_extract_expected_response,
         test_compare_json_objects_equal,
         test_compare_json_objects_different,
-        test_validate_frontmatter_with_jsonschema,
-        test_validate_frontmatter_without_jsonschema,
+        test_validate_front_matter_with_jsonschema,
+        test_validate_front_matter_without_jsonschema,
         test_real_test_data_files,
     ]
     

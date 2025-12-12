@@ -3,9 +3,9 @@
 Shared utilities for documentation testing tools.
 
 This module provides common functions for:
-- Parsing YAML frontmatter from markdown files
+- Parsing YAML front matter from markdown files
 - Reading markdown files with error handling
-- Extracting test configuration from frontmatter
+- Extracting test configuration from front matter
 - Unified logging with GitHub Actions annotation support
 """
 
@@ -23,7 +23,7 @@ def parse_front_matter(content: str) -> Optional[Dict[str, Any]]:
         content: Full markdown file content as string
         
     Returns:
-        Dictionary of frontmatter metadata, or None if not found/invalid
+        Dictionary of front matter metadata, or None if not found/invalid
         
     Example:
         >>> content = "---\\nlayout: default\\n---\\n# Heading"
@@ -73,7 +73,7 @@ def get_test_config(metadata: Dict[str, Any]) -> Dict[str, Any]:
     Extract test configuration from front matter metadata.
     
     Args:
-        metadata: Parsed frontmatter dictionary
+        metadata: Parsed front matter dictionary
         
     Returns:
         Test configuration dictionary, or empty dict if not present
