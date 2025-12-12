@@ -10,11 +10,12 @@ This module provides common functions for:
 """
 
 import re
-import yaml
 from pathlib import Path
 from typing import Optional, Dict, Tuple, Any
 
+import yaml
 
+å
 def parse_front_matter(content: str) -> Optional[Dict[str, Any]]:
     """
     Extract and parse YAML front matter from markdown content.
