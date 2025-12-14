@@ -1,16 +1,17 @@
+<!-- vale Google.Headings = NO -->
 # Code examples
 
-**Author:** Edward McHam
+**Author:** `Edward McHam`
 
-## cURL examples
+## `cURL` examples
 
-### GET command
+### `GET` command
 
 ```shell
 curl http://localhost:3000/users/3
 ```
 
-### GET response
+### `GET` response
 
 ```json
 {
@@ -21,13 +22,13 @@ curl http://localhost:3000/users/3
 }
 ```
 
-### POST command
+### `POST` command
 
 ```shell
 curl -d "last_name=Smithy&first_name=Fred&email=f.smithy@example.com" -X POST http://localhost:3000/users
 ```
 
-### POST response
+### `POST` response
 
 ```json
 {
@@ -42,7 +43,7 @@ curl -d "last_name=Smithy&first_name=Fred&email=f.smithy@example.com" -X POST ht
 
 Get third task
 
-### GET Request
+### `GET` Request
 
 **Method**:
 
@@ -50,7 +51,7 @@ Get third task
 http://localhost:3000/tasks/3
 ```
 
-### GET Response
+### `GET` Response
 
 ```json
 {
@@ -63,7 +64,7 @@ http://localhost:3000/tasks/3
 }
 ```
 
-### POST Request
+### `POST` Request
 
 **Method**:
 
@@ -71,7 +72,7 @@ http://localhost:3000/tasks/3
 {base_url}/tasks
 ```
 
-### POST Response
+### `POST` Response
 
 ```json
 {

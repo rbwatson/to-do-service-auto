@@ -2,17 +2,17 @@
 
 **Author:** \<replace with your name\>
 
-## cURL example
+## `cURL` example
 
 \<replace with a description of the example\>
 
-### cURL command
+### `cURL` command
 
 ```shell
 <replace with the command line used>
 ```
 
-### cURL response
+### `cURL` response
 
 ```shell
 <replace with the response>
