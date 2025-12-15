@@ -32,6 +32,9 @@ try:
 except ImportError:
     JSONSCHEMA_AVAILABLE = False
 
+# Default schema path for front matter validation
+DEFAULT_SCHEMA_PATH = '.github/schemas/front-matter-schema.json'
+
 # Schema cache - stores loaded schemas to avoid repeated file I/O
 _SCHEMA_CACHE: Dict[str, Dict[str, Any]] = {}
 
@@ -217,6 +220,10 @@ def validate_front_matter_schema(
                 "warning", file_path, None, use_actions, action_level)
             return True, False, [], []
     
+    # At this point, schema is guaranteed to be a Dict (not None)
+    # Type checkers need help understanding this
+    assert schema is not None
+    
     # Create validator
     validator = Draft7Validator(schema)
     errors: List[str] = []
@@ -259,8 +266,8 @@ def validate_with_default_schema(
     """
     Validate front matter using the default schema location.
     
-    This is a convenience function that uses the standard schema path:
-    .github/schemas/front-matter-schema.json
+    This is a convenience function that uses the standard schema path
+    defined in DEFAULT_SCHEMA_PATH constant.
     
     Args:
         metadata: Parsed front matter dictionary
@@ -277,10 +284,9 @@ def validate_with_default_schema(
         >>> if is_valid:
         ...     print("Front matter is valid")
     """
-    default_schema_path = ".github/schemas/front-matter-schema.json"
     return validate_front_matter_schema(
         metadata=metadata,
-        schema_path=default_schema_path,
+        schema_path=DEFAULT_SCHEMA_PATH,
         file_path=file_path,
         use_actions=use_actions,
         action_level=action_level

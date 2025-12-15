@@ -25,12 +25,17 @@ import json
 import sys
 import argparse
 from pathlib import Path
+from typing import Optional, Dict, Tuple, List, Any
 
 from doc_test_utils import read_markdown_file, parse_front_matter, log, HELP_URLS
-from schema_validator import validate_front_matter_schema
+from schema_validator import validate_front_matter_schema, DEFAULT_SCHEMA_PATH
+
+# Configuration constants
+CURL_TIMEOUT_SECONDS = 10
+MAX_DIFFERENCES_SHOWN = 10
 
 
-def parse_testable_entry(entry):
+def parse_testable_entry(entry: str) -> Tuple[Optional[str], Optional[List[int]]]:
     """
     Parse a testable entry into example name and expected status codes.
     
@@ -72,7 +77,37 @@ def parse_testable_entry(entry):
         return None, None
 
 
-def extract_curl_command(content, server_url, example_name):
+def _make_flexible_pattern(example_name: str) -> str:
+    """
+    Create a flexible regex pattern that matches the example name with optional backticks.
+    
+    This allows patterns like "GET example" to match:
+    - "GET example"
+    - "`GET` example" 
+    - "GET `example`"
+    - "`GET` `example`"
+    
+    Args:
+        example_name: The example name to create a pattern for
+        
+    Returns:
+        str: Regex pattern with flexible backtick matching
+        
+    Example:
+        >>> pattern = _make_flexible_pattern("GET example")
+        >>> import re
+        >>> bool(re.search(pattern, "### `GET` example request"))
+        True
+    """
+    escaped_name = re.escape(example_name)
+    # Split on spaces and wrap each word to allow optional backticks
+    words = escaped_name.split(r'\ ')
+    flexible_words = [rf'`?{word}`?' for word in words]
+    flexible_pattern = r'\s+'.join(flexible_words)
+    return flexible_pattern
+
+
+def extract_curl_command(content: str, server_url: str, example_name: str) -> Optional[str]:
     """
     Extract curl command from the specified example section.
     
@@ -95,13 +130,8 @@ def extract_curl_command(content, server_url, example_name):
         >>> print(cmd)
         curl -i http://localhost:3000/api/users
     """
-    # Escape the example name but allow backticks around words
-    # Pattern like "GET example" should match "`GET` example", "GET `example`", or "`GET` `example`"
-    escaped_name = re.escape(example_name)
-    # Split on spaces and wrap each word to allow optional backticks
-    words = escaped_name.split(r'\ ')
-    flexible_words = [rf'`?{word}`?' for word in words]
-    flexible_pattern = r'\s+'.join(flexible_words)
+    # Create flexible pattern that allows optional backticks around words
+    flexible_pattern = _make_flexible_pattern(example_name)
     
     # Look for heading with "request" (h3 or h4)
     heading_pattern = rf'^###\#?\s+{flexible_pattern}\s+request'
@@ -150,7 +180,7 @@ def extract_curl_command(content, server_url, example_name):
     return None
 
 
-def extract_expected_response(content, example_name):
+def extract_expected_response(content: str, example_name: str) -> Optional[Dict[str, Any]]:
     """
     Extract expected JSON response from the specified example section.
     
@@ -172,11 +202,8 @@ def extract_expected_response(content, example_name):
         >>> print(response['users'][0]['name'])
         Alice
     """
-    # Similar flexible pattern as curl extraction
-    escaped_name = re.escape(example_name)
-    words = escaped_name.split(r'\ ')
-    flexible_words = [rf'`?{word}`?' for word in words]
-    flexible_pattern = r'\s+'.join(flexible_words)
+    # Create flexible pattern that allows optional backticks around words
+    flexible_pattern = _make_flexible_pattern(example_name)
     
     # Look for heading with "response" (h3 or h4)
     heading_pattern = rf'^###\#?\s+{flexible_pattern}\s+response'
@@ -220,7 +247,7 @@ def extract_expected_response(content, example_name):
     return None
 
 
-def execute_curl(curl_command):
+def execute_curl(curl_command: str) -> Tuple[Optional[int], Optional[str], str]:
     """
     Execute a curl command and return the response.
     
@@ -231,11 +258,10 @@ def execute_curl(curl_command):
         tuple: (status_code, headers, body) or (None, None, error_message)
 
     Example:
-        >>> status, headers, body = execute_curl('curl -i http://localhost:3000/api/users')
+        >>> curl_command = 'curl -i http://localhost:3000/api/users'
+        >>> status, headers, body = execute_curl(curl_command)
         >>> if status:
         ...     print(f"Status: {status}")
-        ...     data = json.loads(body)
-        Status: 200
     """
     try:
         # Run curl with -i to get headers
@@ -243,7 +269,7 @@ def execute_curl(curl_command):
             ['bash', '-c', curl_command],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=CURL_TIMEOUT_SECONDS
         )
         
         if result.returncode != 0:
@@ -259,93 +285,106 @@ def execute_curl(curl_command):
             parts = output.split('\r\n\r\n', 1)
         
         if len(parts) < 2:
-            print (f"ERROR in response buffer:\n{result.stdout}")  
-            return None, None, "Could not parse response"
+            return None, None, "Could not parse response headers/body"
         
-        headers_text = parts[0]
-        body = parts[1] if len(parts) > 1 else ""
+        headers = parts[0]
+        body = parts[1]
         
         # Extract status code from first line
-        status_line = headers_text.split('\n')[0]
-        status_match = re.search(r'HTTP/[\d.]+ (\d+)', status_line)
+        status_line = headers.split('\n')[0]
+        status_match = re.search(r'HTTP/[\d.]+\s+(\d{3})', status_line)
         
         if not status_match:
-            return None, None, "Could not parse status code"
+            return None, None, "Could not extract status code"
         
         status_code = int(status_match.group(1))
-        
-        return status_code, headers_text, body
+        return status_code, headers, body
         
     except subprocess.TimeoutExpired:
-        return None, None, "Request timed out"
+        return None, None, f"Command timed out after {CURL_TIMEOUT_SECONDS} seconds"
     except Exception as e:
         return None, None, str(e)
 
 
-def compare_json_objects(actual, expected, path=""):
+def compare_json_objects(actual: Any, expected: Any, path: str = "") -> Tuple[bool, List[str]]:
     """
-    Compare two JSON objects and return differences.
+    Recursively compare two JSON objects and return differences.
     
     Args:
-        actual: Actual JSON object
-        expected: Expected JSON object
-        path: Current path in the object (for error messages)
+        actual: The actual JSON value
+        expected: The expected JSON value
+        path: Current path in the object hierarchy (for error messages)
         
     Returns:
-        tuple: (are_equal, differences_list)
+        tuple: (are_equal, list_of_differences)
 
     Example:
-        >>> expected = {"name": "Alice", "age": 30}
-        >>> actual = {"name": "Alice", "age": 31}
+        >>> actual = {"name": "Alice", "age": 30}
+        >>> expected = {"name": "Alice", "age": 25}
         >>> are_equal, diffs = compare_json_objects(actual, expected)
         >>> print(f"Equal: {are_equal}")
         >>> print(f"Differences: {diffs}")
         Equal: False
-        Differences: ['age: Value mismatch - expected 30, got 31']
+        Differences: ['Value mismatch at age: expected 25, got 30']
     """
     differences = []
     
-    # Check types match
+    # Compare types
     if type(actual) != type(expected):
-        differences.append(f"{path}: Type mismatch - expected {type(expected).__name__}, got {type(actual).__name__}")
+        differences.append(f"Type mismatch at {path or 'root'}: expected {type(expected).__name__}, got {type(actual).__name__}")
         return False, differences
     
     # Compare based on type
     if isinstance(expected, dict):
-        # Check all expected keys exist
+        # Check for missing keys
         for key in expected:
             if key not in actual:
-                differences.append(f"{path}.{key}: Missing in actual response")
-            else:
-                are_equal, subdiffs = compare_json_objects(
-                    actual[key], expected[key], f"{path}.{key}" if path else key
-                )
-                differences.extend(subdiffs)
+                differences.append(f"Missing key at {path}.{key}" if path else f"Missing key: {key}")
         
-        # Check for extra keys in actual
+        # Check for extra keys
         for key in actual:
             if key not in expected:
-                differences.append(f"{path}.{key}: Extra key in actual response (not in documentation)")
+                differences.append(f"Extra key at {path}.{key}" if path else f"Extra key: {key}")
+        
+        # Recursively compare common keys
+        for key in expected:
+            if key in actual:
+                new_path = f"{path}.{key}" if path else key
+                are_equal, sub_diffs = compare_json_objects(actual[key], expected[key], new_path)
+                differences.extend(sub_diffs)
     
     elif isinstance(expected, list):
+        # Compare list lengths
         if len(actual) != len(expected):
-            differences.append(f"{path}: Array length mismatch - expected {len(expected)}, got {len(actual)}")
+            differences.append(f"List length mismatch at {path or 'root'}: expected {len(expected)} items, got {len(actual)}")
+            # Still compare what we can
+            min_len = min(len(actual), len(expected))
         else:
-            for i, (actual_item, expected_item) in enumerate(zip(actual, expected)):
-                are_equal, subdiffs = compare_json_objects(
-                    actual_item, expected_item, f"{path}[{i}]"
-                )
-                differences.extend(subdiffs)
+            min_len = len(expected)
+        
+        # Compare list items
+        for i in range(min_len):
+            new_path = f"{path}[{i}]" if path else f"[{i}]"
+            are_equal, sub_diffs = compare_json_objects(actual[i], expected[i], new_path)
+            differences.extend(sub_diffs)
     
     else:
-        # Primitive types - direct comparison
+        # Compare primitive values
         if actual != expected:
-            differences.append(f"{path}: Value mismatch - expected {expected}, got {actual}")
+            differences.append(f"Value mismatch at {path or 'root'}: expected {expected}, got {actual}")
     
     return len(differences) == 0, differences
 
 
-def test_example(content, test_config, example_name, expected_codes, file_path, use_actions, action_level):
+def test_example(
+    content: str,
+    test_config: Dict[str, Any],
+    example_name: str,
+    expected_codes: List[int],
+    file_path: str,
+    use_actions: bool,
+    action_level: str
+) -> bool:
     """
     Test a single example from the documentation.
     
@@ -374,12 +413,9 @@ def test_example(content, test_config, example_name, expected_codes, file_path, 
         ... )
         >>> print(f"Test {'passed' if passed else 'failed'}")
     """
-    log(f"Testing: {example_name}", "info")
-    log(f"  Expected status: {', '.join(map(str, expected_codes))}", "info")
+    log(f"\nTesting example: {example_name}", "info")
     
     # Extract curl command
-    # get server_url specified in test config, default to empty string
-    # if not specified, the URL from the document will be used
     server_url = test_config.get('server_url', '')
     curl_cmd = extract_curl_command(content, server_url, example_name)
     if not curl_cmd:
@@ -440,14 +476,19 @@ def test_example(content, test_config, example_name, expected_codes, file_path, 
         log(f"Example '{example_name}' failed: Response does not match documentation", 
             "error", file_path, None, use_actions, action_level)
         log(f"  Differences found: {len(differences)}", "info")
-        for diff in differences[:10]:  # Show first 10 differences
+        for diff in differences[:MAX_DIFFERENCES_SHOWN]:
             log(f"    • {diff}", "info")
-        if len(differences) > 10:
-            log(f"  ... and {len(differences) - 10} more differences", "info")
+        if len(differences) > MAX_DIFFERENCES_SHOWN:
+            log(f"  ... and {len(differences) - MAX_DIFFERENCES_SHOWN} more differences", "info")
         return False
 
 
-def test_file(file_path, schema_path, use_actions=False, action_level="warning"):
+def test_file(
+    file_path: str,
+    schema_path: str,
+    use_actions: bool = False,
+    action_level: str = "warning"
+) -> Tuple[int, int, int]:
     """
     Test all examples in a documentation file.
     
@@ -528,7 +569,11 @@ def test_file(file_path, schema_path, use_actions=False, action_level="warning")
             log(f"Invalid testable entry format: {testable_entry}", "error", file_path, None, use_actions, action_level)
             failed_tests += 1
             continue
-        
+
+        if expected_codes is None:
+            # assign default expected HTTP status code
+            expected_codes = [200]
+
         if test_example(content, test_config, example_name, expected_codes, file_path, use_actions, action_level):
             passed_tests += 1
         else:
@@ -537,7 +582,7 @@ def test_file(file_path, schema_path, use_actions=False, action_level="warning")
     return total_tests, passed_tests, failed_tests
 
 
-def main():
+def main() -> None:
     """Main entry point for the test-api-docs tool."""
     parser = argparse.ArgumentParser(
         description='Test API documentation code examples against a running json-server instance.',
@@ -570,7 +615,7 @@ Examples:
     
     parser.add_argument(
         '--schema',
-        default='.github/schemas/front-matter-schema.json',
+        default=DEFAULT_SCHEMA_PATH,
         help='Path to JSON schema file for front matter validation'
     )
     
