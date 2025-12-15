@@ -92,6 +92,8 @@ Environment:
     parser.add_argument(
         '--action', '-a',
         type=str,
+        nargs='?',
+        const='warning',
         default=None,
         choices=['all', 'warning', 'error'],
         help='Output GitHub Actions annotations at specified level (all, warning, error)'
