@@ -13,11 +13,13 @@ This module provides foundational functions for querying GitHub Actions workflow
 Core data collection utilities.
 
 **Functions:**
-- `list_workflow_runs()` - List workflow runs with filtering by date, branch, status
+- `list_workflow_runs()` - List workflow runs with optional filtering by workflow name, date, branch, status
 - `get_workflow_run_details()` - Get detailed information for a specific run
 - `list_workflow_jobs()` - List all jobs in a workflow run
 - `get_workflow_job_details()` - Get detailed job information including steps
 - `get_workflow_run_timing()` - Calculate timing metrics for runs and jobs
+
+**Note:** `list_workflow_runs()` uses the general `/actions/runs` endpoint and filters results in Python. This is more reliable than the workflow-specific endpoint which requires exact workflow file names and can return 404 for workflows that exist but haven't run recently.
 
 **Error Handling:**
 - Returns `None` on errors (follows project pattern)
@@ -64,13 +66,92 @@ brew install gh
 gh auth login
 ```
 
+## Field Filtering
+
+All commands support `--fields` to return only specific fields from the response. This is useful for exploration and reducing output size.
+
+### Syntax
+
+```bash
+--fields "field1,field2,field3"
+```
+
+Fields are comma-separated. Whitespace is automatically trimmed.
+
+### Nested Fields
+
+Use dot notation to access nested fields:
+
+```bash
+--fields "id,name,actor.login,head_commit.message"
+```
+
+This returns:
+```json
+[
+  {
+    "id": 12345,
+    "name": "PR Validation",
+    "actor": {
+      "login": "username"
+    },
+    "head_commit": {
+      "message": "Fix bug"
+    }
+  }
+]
+```
+
+### Examples
+
+**Minimal output for quick scanning:**
+```bash
+python3 workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name,conclusion"
+```
+
+**Include timing information:**
+```bash
+python3 workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name,created_at,updated_at,conclusion"
+```
+
+**Include author information:**
+```bash
+python3 workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name,actor.login,conclusion"
+```
+
+**Job-level fields:**
+```bash
+python3 workflow-data.py list-jobs rbwatson to-do-service-auto 12345 --fields "id,name,conclusion,started_at,completed_at"
+```
+
+### Notes
+
+- If a field doesn't exist, it's omitted from output (no error)
+- Field filtering happens after API response, so doesn't reduce API quota usage
+- Useful for exploration: start with all fields, then narrow down to what you need
+
 ## Usage
 
 ### Basic Examples
 
-**List recent workflow runs:**
+**List all recent workflow runs:**
 ```bash
 python3 workflow-data.py list-runs rbwatson to-do-service-auto
+```
+
+**Return only specific fields:**
+```bash
+python3 workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name,conclusion,created_at"
+```
+
+**Use nested fields with dot notation:**
+```bash
+python3 workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name,actor.login,head_commit.message"
+```
+
+**Filter to specific workflow:**
+```bash
+python3 workflow-data.py list-runs rbwatson to-do-service-auto --workflow pr-validation.yml
 ```
 
 **List runs from last 14 days:**
@@ -86,6 +167,16 @@ python3 workflow-data.py list-runs rbwatson to-do-service-auto --branch main
 **Filter by status:**
 ```bash
 python3 workflow-data.py list-runs rbwatson to-do-service-auto --status completed
+```
+
+**Get run with specific fields:**
+```bash
+python3 workflow-data.py get-run rbwatson to-do-service-auto 12345678 --fields "id,name,conclusion"
+```
+
+**List jobs with specific fields:**
+```bash
+python3 workflow-data.py list-jobs rbwatson to-do-service-auto 12345678 --fields "id,name,conclusion,started_at"
 ```
 
 **Get run details:**
@@ -121,7 +212,14 @@ from workflow_data_utils import (
     get_workflow_run_timing
 )
 
-# List recent runs
+# List all recent runs
+runs = list_workflow_runs(
+    repo_owner='rbwatson',
+    repo_name='to-do-service-auto',
+    days_back=7
+)
+
+# Or filter to specific workflow
 runs = list_workflow_runs(
     repo_owner='rbwatson',
     repo_name='to-do-service-auto',
@@ -272,16 +370,27 @@ for run in runs:
 - Run: `gh auth login`
 - Follow authentication prompts
 
+**"Not Found (HTTP 404)" errors**
+- The tool uses `/repos/{owner}/{repo}/actions/runs` endpoint (lists all workflows)
+- If you see 404, verify repository name: `gh api repos/{owner}/{repo}`
+- Check you have access: `gh repo view {owner}/{repo}`
+
 **Empty results**
 - Check repository name and owner are correct
-- Verify workflow name matches actual workflow file
-- Check date range (increase `--days` parameter)
 - Verify workflow has run in the specified time period
+- Increase date range: `--days 30`
+- Try without workflow filter first: omit `--workflow` parameter
+- Check workflow names with: `gh api repos/{owner}/{repo}/actions/workflows`
 
 **API rate limiting**
 - GitHub API has rate limits
 - Use `gh api rate_limit` to check current limit
 - Reduce request frequency if hitting limits
+
+**Results don't match manual gh api calls**
+- The tool filters results by date in Python after fetching
+- Use `--days` parameter to adjust range
+- Workflow filtering is case-sensitive and matches file path endings
 
 ## Contributing
 

@@ -10,17 +10,26 @@ Usage:
     workflow-data.py timing <owner> <repo> <run-id>
 
 Examples:
-    # List recent workflow runs
+    # List recent workflow runs (all workflows)
     workflow-data.py list-runs rbwatson to-do-service-auto
     
-    # List runs from last 14 days for specific workflow
-    workflow-data.py list-runs rbwatson to-do-service-auto --days 14 --workflow pr-validation.yml
+    # Filter to specific workflow
+    workflow-data.py list-runs rbwatson to-do-service-auto --workflow pr-validation.yml
     
-    # Get details for specific run
-    workflow-data.py get-run rbwatson to-do-service-auto 12345678
+    # List runs from last 14 days
+    workflow-data.py list-runs rbwatson to-do-service-auto --days 14
+    
+    # Return only specific fields
+    workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name,conclusion,created_at"
+    
+    # Get run with specific fields (including nested)
+    workflow-data.py get-run rbwatson to-do-service-auto 12345678 --fields "id,name,actor.login"
     
     # List all jobs in a run
     workflow-data.py list-jobs rbwatson to-do-service-auto 12345678
+    
+    # List jobs with specific fields
+    workflow-data.py list-jobs rbwatson to-do-service-auto 12345678 --fields "id,name,conclusion"
     
     # Get detailed job information
     workflow-data.py get-job rbwatson to-do-service-auto 98765432
@@ -46,6 +55,13 @@ from workflow_data_utils import (
 )
 
 
+def parse_fields(fields_str):
+    """Parse comma-separated field list, handling whitespace."""
+    if not fields_str:
+        return None
+    return [f.strip() for f in fields_str.split(',') if f.strip()]
+
+
 def output_json(data, pretty=True):
     """Output data as JSON."""
     if data is None:
@@ -60,13 +76,16 @@ def output_json(data, pretty=True):
 
 def cmd_list_runs(args):
     """List workflow runs."""
+    fields = parse_fields(args.fields) if hasattr(args, 'fields') else None
+    
     runs = list_workflow_runs(
         repo_owner=args.owner,
         repo_name=args.repo,
         workflow_name=args.workflow,
         days_back=args.days,
         branch=args.branch,
-        status=args.status
+        status=args.status,
+        fields=fields
     )
     
     if runs is None:
@@ -77,10 +96,13 @@ def cmd_list_runs(args):
 
 def cmd_get_run(args):
     """Get workflow run details."""
+    fields = parse_fields(args.fields) if hasattr(args, 'fields') else None
+    
     details = get_workflow_run_details(
         repo_owner=args.owner,
         repo_name=args.repo,
-        run_id=args.run_id
+        run_id=args.run_id,
+        fields=fields
     )
     
     if details is None:
@@ -91,10 +113,13 @@ def cmd_get_run(args):
 
 def cmd_list_jobs(args):
     """List jobs for a workflow run."""
+    fields = parse_fields(args.fields) if hasattr(args, 'fields') else None
+    
     jobs = list_workflow_jobs(
         repo_owner=args.owner,
         repo_name=args.repo,
-        run_id=args.run_id
+        run_id=args.run_id,
+        fields=fields
     )
     
     if jobs is None:
@@ -105,10 +130,13 @@ def cmd_list_jobs(args):
 
 def cmd_get_job(args):
     """Get job details."""
+    fields = parse_fields(args.fields) if hasattr(args, 'fields') else None
+    
     job = get_workflow_job_details(
         repo_owner=args.owner,
         repo_name=args.repo,
-        job_id=args.job_id
+        job_id=args.job_id,
+        fields=fields
     )
     
     if job is None:
@@ -147,13 +175,15 @@ def main():
         subparser.add_argument('repo', help='Repository name')
         subparser.add_argument('--compact', action='store_true',
                              help='Output compact JSON (no pretty-printing)')
+        subparser.add_argument('--fields',
+                             help='Comma-separated list of fields to return (e.g., "id,name,conclusion")')
     
     # list-runs command
     parser_list = subparsers.add_parser('list-runs',
                                         help='List workflow runs')
     add_common_args(parser_list)
-    parser_list.add_argument('--workflow', default='pr-validation.yml',
-                           help='Workflow file name (default: pr-validation.yml)')
+    parser_list.add_argument('--workflow',
+                           help='Filter by workflow file name (e.g., pr-validation.yml)')
     parser_list.add_argument('--days', type=int, default=7,
                            help='Days of history to retrieve (default: 7)')
     parser_list.add_argument('--branch',

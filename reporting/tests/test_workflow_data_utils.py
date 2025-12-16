@@ -22,10 +22,12 @@ import json
 from pathlib import Path
 from datetime import datetime, timedelta
 
+# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from workflow_data_utils import (
     _check_gh_cli,
+    _filter_fields,
     list_workflow_runs,
     get_workflow_run_details,
     list_workflow_jobs,
@@ -63,7 +65,7 @@ def test_list_workflow_runs_params():
     runs = list_workflow_runs(
         repo_owner='nonexistent',
         repo_name='nonexistent',
-        workflow_name='test.yml',
+        workflow_name='test.yml',  # Optional parameter
         days_back=1
     )
     
@@ -71,7 +73,18 @@ def test_list_workflow_runs_params():
     assert runs is None or isinstance(runs, list), \
         "Should return None or list, not crash"
     
+    # Test without workflow_name (should work)
+    runs2 = list_workflow_runs(
+        repo_owner='nonexistent',
+        repo_name='nonexistent',
+        days_back=1
+    )
+    
+    assert runs2 is None or isinstance(runs2, list), \
+        "Should work without workflow_name parameter"
+    
     print("  ✓ Handles invalid repository gracefully")
+    print("  ✓ Works with optional workflow_name parameter")
 
 
 def test_get_workflow_run_details_invalid():
@@ -192,6 +205,63 @@ def test_timing_calculation_logic():
     print("  ✓ Timing calculation works correctly")
 
 
+def test_filter_fields():
+    """Test field filtering logic."""
+    print("\n" + "="*60)
+    print("TEST: Field filtering logic")
+    print("="*60)
+    
+    # Test with simple fields
+    data = {
+        'id': 123,
+        'name': 'test',
+        'status': 'completed',
+        'extra': 'should be filtered'
+    }
+    
+    filtered = _filter_fields(data, ['id', 'name'])
+    assert 'id' in filtered, "Should include 'id' field"
+    assert 'name' in filtered, "Should include 'name' field"
+    assert 'extra' not in filtered, "Should filter out 'extra' field"
+    assert len(filtered) == 2, f"Should have 2 fields, got {len(filtered)}"
+    print("  ✓ Simple field filtering works")
+    
+    # Test with nested fields
+    nested_data = {
+        'id': 123,
+        'actor': {
+            'login': 'user1',
+            'id': 456,
+            'email': 'test@example.com'
+        }
+    }
+    
+    filtered = _filter_fields(nested_data, ['id', 'actor.login'])
+    assert 'id' in filtered, "Should include 'id' field"
+    assert 'actor' in filtered, "Should include 'actor' object"
+    assert 'login' in filtered['actor'], "Should include nested 'actor.login' field"
+    assert 'email' not in filtered.get('actor', {}), "Should filter out 'actor.email'"
+    print("  ✓ Nested field filtering works")
+    
+    # Test with list of objects
+    list_data = [
+        {'id': 1, 'name': 'first', 'extra': 'data'},
+        {'id': 2, 'name': 'second', 'extra': 'more'}
+    ]
+    
+    filtered = _filter_fields(list_data, ['id', 'name'])
+    assert len(filtered) == 2, "Should preserve list length"
+    assert 'extra' not in filtered[0], "Should filter fields in list items"
+    print("  ✓ List filtering works")
+    
+    # Test with None fields (should return all)
+    filtered = _filter_fields(data, None)
+    assert len(filtered) == len(data), "None fields should return all data"
+    print("  ✓ None fields returns all data")
+    
+    print("  ✓ All field filtering tests passed")
+
+
 def run_all_tests():
     """Run all test functions."""
     print("\n" + "="*70)
@@ -207,6 +277,7 @@ def run_all_tests():
         test_get_workflow_run_timing_invalid,
         test_date_filtering_logic,
         test_timing_calculation_logic,
+        test_filter_fields,
     ]
     
     passed = 0

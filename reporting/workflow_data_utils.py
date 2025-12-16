@@ -78,9 +78,9 @@ def _run_gh_api(endpoint: str, params: Optional[Dict[str, str]] = None) -> Optio
     cmd = ['gh', 'api', endpoint]
     
     # Add query parameters
-    if params:
-        for key, value in params.items():
-            cmd.extend(['-F', f'{key}={value}'])
+#    if params:
+#        for key, value in params.items():
+#            cmd.extend(['-F', f'{key}={value}'])
     
     try:
         result = subprocess.run(
@@ -107,13 +107,61 @@ def _run_gh_api(endpoint: str, params: Optional[Dict[str, str]] = None) -> Optio
         return None
 
 
+def _filter_fields(data: Any, fields: Optional[List[str]]) -> Any:
+    """
+    Filter data to include only specified fields.
+    
+    Args:
+        data: Data to filter (dict, list, or primitive)
+        fields: List of field names to include, or None for all fields
+        
+    Returns:
+        Filtered data with only specified fields
+        
+    Note:
+        - Supports dot notation for nested fields (e.g., 'actor.login')
+        - If field doesn't exist, it's omitted from output
+        - Works recursively on lists
+    """
+    if fields is None:
+        return data
+    
+    if isinstance(data, list):
+        return [_filter_fields(item, fields) for item in data]
+    
+    if not isinstance(data, dict):
+        return data
+    
+    filtered = {}
+    for field in fields:
+        # Support dot notation for nested fields
+        if '.' in field:
+            parts = field.split('.', 1)
+            first, rest = parts[0], parts[1]
+            if first in data:
+                nested_value = data[first]
+                if isinstance(nested_value, dict):
+                    nested_filtered = _filter_fields(nested_value, [rest])
+                    if rest in nested_filtered:
+                        if first not in filtered:
+                            filtered[first] = {}
+                        filtered[first][rest] = nested_filtered[rest]
+        else:
+            # Simple field
+            if field in data:
+                filtered[field] = data[field]
+    
+    return filtered
+
+
 def list_workflow_runs(
     repo_owner: str,
     repo_name: str,
-    workflow_name: str = 'pr-validation.yml',
+    workflow_name: Optional[str] = None,
     days_back: int = 7,
     branch: Optional[str] = None,
-    status: Optional[str] = None
+    status: Optional[str] = None,
+    fields: Optional[List[str]] = None
 ) -> Optional[List[Dict[str, Any]]]:
     """
     List workflow runs for a repository.
@@ -121,10 +169,14 @@ def list_workflow_runs(
     Args:
         repo_owner: Repository owner (username or organization)
         repo_name: Repository name
-        workflow_name: Workflow file name (default: 'pr-validation.yml')
+        workflow_name: Optional workflow file name to filter results (e.g. 'pr-validation.yml')
+                      If None, returns all workflows
         days_back: Number of days of history to retrieve (default: 7)
         branch: Optional branch name filter
         status: Optional status filter ('completed', 'in_progress', 'queued', etc.)
+        fields: Optional list of field names to include in results
+                Supports dot notation (e.g., ['id', 'name', 'actor.login'])
+                If None, returns all fields
         
     Returns:
         List of workflow run dictionaries, or None on error
@@ -136,8 +188,19 @@ def list_workflow_runs(
         15
         >>> runs[0]['conclusion']
         'success'
+        
+        >>> # Filter to specific workflow
+        >>> runs = list_workflow_runs('rbwatson', 'to-do-service-auto', 
+        ...                           workflow_name='pr-validation.yml')
+        
+        >>> # Return only specific fields
+        >>> runs = list_workflow_runs('rbwatson', 'to-do-service-auto',
+        ...                           fields=['id', 'name', 'conclusion'])
+        >>> runs[0].keys()
+        dict_keys(['id', 'name', 'conclusion'])
     """
-    endpoint = f'/repos/{repo_owner}/{repo_name}/actions/workflows/{workflow_name}/runs'
+    # Use general actions/runs endpoint (more reliable than workflow-specific)
+    endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs'
     
     # Calculate date cutoff (timezone-aware)
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
@@ -166,13 +229,26 @@ def list_workflow_runs(
         if datetime.fromisoformat(run['created_at'].replace('Z', '+00:00')) >= cutoff_date
     ]
     
+    # Filter by workflow name if specified
+    if workflow_name:
+        filtered_runs = [
+            run for run in filtered_runs
+            if run.get('path', '').endswith(workflow_name) or 
+               run.get('name', '') == workflow_name
+        ]
+    
+    # Filter fields if specified
+    if fields:
+        filtered_runs = _filter_fields(filtered_runs, fields)
+    
     return filtered_runs
 
 
 def get_workflow_run_details(
     repo_owner: str,
     repo_name: str,
-    run_id: int
+    run_id: int,
+    fields: Optional[List[str]] = None
 ) -> Optional[Dict[str, Any]]:
     """
     Get detailed information about a specific workflow run.
@@ -181,6 +257,9 @@ def get_workflow_run_details(
         repo_owner: Repository owner (username or organization)
         repo_name: Repository name
         run_id: Workflow run ID
+        fields: Optional list of field names to include in results
+                Supports dot notation (e.g., ['id', 'name', 'actor.login'])
+                If None, returns all fields
         
     Returns:
         Workflow run details dict, or None on error
@@ -193,6 +272,10 @@ def get_workflow_run_details(
         'success'
         >>> details['run_duration_ms']
         125000
+        
+        >>> # Return only specific fields
+        >>> details = get_workflow_run_details('rbwatson', 'to-do-service-auto', 12345,
+        ...                                     fields=['id', 'conclusion', 'created_at'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs/{run_id}'
     
@@ -200,13 +283,18 @@ def get_workflow_run_details(
     if response is None:
         return None
     
+    # Filter fields if specified
+    if fields:
+        response = _filter_fields(response, fields)
+    
     return response
 
 
 def list_workflow_jobs(
     repo_owner: str,
     repo_name: str,
-    run_id: int
+    run_id: int,
+    fields: Optional[List[str]] = None
 ) -> Optional[List[Dict[str, Any]]]:
     """
     List all jobs for a specific workflow run.
@@ -215,6 +303,9 @@ def list_workflow_jobs(
         repo_owner: Repository owner (username or organization)
         repo_name: Repository name
         run_id: Workflow run ID
+        fields: Optional list of field names to include in results
+                Supports dot notation (e.g., ['id', 'name', 'runner.name'])
+                If None, returns all fields
         
     Returns:
         List of job dictionaries, or None on error
@@ -227,6 +318,10 @@ def list_workflow_jobs(
         4
         >>> jobs[0]['name']
         'Validate Testing Tools'
+        
+        >>> # Return only specific fields
+        >>> jobs = list_workflow_jobs('rbwatson', 'to-do-service-auto', 12345,
+        ...                           fields=['id', 'name', 'conclusion'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs/{run_id}/jobs'
     
@@ -238,13 +333,18 @@ def list_workflow_jobs(
     
     jobs = response.get('jobs', [])
     
+    # Filter fields if specified
+    if fields:
+        jobs = _filter_fields(jobs, fields)
+    
     return jobs
 
 
 def get_workflow_job_details(
     repo_owner: str,
     repo_name: str,
-    job_id: int
+    job_id: int,
+    fields: Optional[List[str]] = None
 ) -> Optional[Dict[str, Any]]:
     """
     Get detailed information about a specific workflow job.
@@ -253,6 +353,9 @@ def get_workflow_job_details(
         repo_owner: Repository owner (username or organization)
         repo_name: Repository name
         job_id: Job ID
+        fields: Optional list of field names to include in results
+                Supports dot notation (e.g., ['id', 'name', 'steps.name'])
+                If None, returns all fields
         
     Returns:
         Job details dict including all steps, or None on error
@@ -268,12 +371,20 @@ def get_workflow_job_details(
         8
         >>> job['steps'][0]['name']
         'Checkout code'
+        
+        >>> # Return only specific fields
+        >>> job = get_workflow_job_details('rbwatson', 'to-do-service-auto', 67890,
+        ...                                 fields=['id', 'name', 'conclusion'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/jobs/{job_id}'
     
     response = _run_gh_api(endpoint)
     if response is None:
         return None
+    
+    # Filter fields if specified
+    if fields:
+        response = _filter_fields(response, fields)
     
     return response
 
