@@ -8,6 +8,7 @@ schema definitions that specify field mappings, types, and denormalization.
 
 import csv
 import io
+import sys
 import yaml
 from datetime import datetime
 from pathlib import Path
@@ -32,13 +33,13 @@ def load_schema(schema_path: Path) -> Optional[Dict[str, Any]]:
                 return list(schemas.values())[0]
             return None
     except FileNotFoundError:
-        print(f"Error: Schema file not found: {schema_path}")
+        print(f"Error: Schema file not found: {schema_path}", file=sys.stderr)
         return None
     except yaml.YAMLError as e:
-        print(f"Error: Invalid YAML in schema: {e}")
+        print(f"Error: Invalid YAML in schema: {e}", file=sys.stderr)
         return None
     except Exception as e:
-        print(f"Error loading schema: {e}")
+        print(f"Error loading schema: {e}", file=sys.stderr)
         return None
 
 
@@ -255,5 +256,5 @@ def save_csv(
         
         return True
     except Exception as e:
-        print(f"Error saving CSV: {e}")
+        print(f"Error saving CSV: {e}", file=sys.stderr)
         return False

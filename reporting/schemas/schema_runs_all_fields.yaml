@@ -1,6 +1,9 @@
 # Default schema: All workflow run fields
 # Mode: Denormalized (single CSV file)
 # Use this as a starting point - copy and remove fields you don't need
+#
+# Use this script with the list-runs command to get all workflow run data
+#
 
 runs_all_fields:
   description: "Complete workflow run data with all available fields"

@@ -4,10 +4,10 @@ Query GitHub Actions workflow data for analysis and reporting.
 
 Usage:
     workflow-data.py list-runs <owner> <repo> [options]
-    workflow-data.py get-run <owner> <repo> <run-id>
-    workflow-data.py list-jobs <owner> <repo> <run-id>
-    workflow-data.py get-job <owner> <repo> <job-id>
-    workflow-data.py timing <owner> <repo> <run-id>
+    workflow-data.py get-run <owner> <repo> <run-id> [options]
+    workflow-data.py list-jobs <owner> <repo> <run-id> [options]
+    workflow-data.py get-job <owner> <repo> <job-id> [options]
+    workflow-data.py timing <owner> <repo> <run-id> [options]
 
 Examples:
     # List recent workflow runs (all workflows)

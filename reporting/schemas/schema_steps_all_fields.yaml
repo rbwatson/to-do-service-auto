@@ -1,6 +1,8 @@
 # Default schema: All step fields from a job
 # Mode: Denormalized (expands steps array into rows, includes job context)
 # Use this as a starting point - copy and remove fields you don't need
+#
+# Use this script with the list-jobs command to get all step data for the jobs in a workflow run
 
 steps_all_fields:
   description: "Complete step data with job context"

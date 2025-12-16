@@ -12,6 +12,7 @@ All functions use the GitHub CLI (gh) via bash commands.
 """
 
 import json
+import sys
 import subprocess
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List, Any
@@ -33,7 +34,7 @@ def _check_gh_cli() -> bool:
             timeout=5
         )
         if result.returncode != 0:
-            print("Error: gh CLI not found. Install from https://cli.github.com/")
+            print("Error: gh CLI not found. Install from https://cli.github.com/", file=sys.stderr)
             return False
         
         # Check authentication
@@ -44,18 +45,18 @@ def _check_gh_cli() -> bool:
             timeout=5
         )
         if result.returncode != 0:
-            print("Error: gh CLI not authenticated. Run 'gh auth login'")
+            print("Error: gh CLI not authenticated. Run 'gh auth login'", file=sys.stderr)
             return False
             
         return True
     except FileNotFoundError:
-        print("Error: gh CLI not found. Install from https://cli.github.com/")
+        print("Error: gh CLI not found. Install from https://cli.github.com/", file=sys.stderr)
         return False
     except subprocess.TimeoutExpired:
-        print("Error: gh CLI check timed out")
+        print("Error: gh CLI check timed out", file=sys.stderr)
         return False
     except Exception as e:
-        print(f"Error checking gh CLI: {e}")
+        print(f"Error checking gh CLI: {e}", file=sys.stderr)
         return False
 
 
@@ -93,19 +94,20 @@ def _run_gh_api(endpoint: str, params: Optional[Dict[str, str]] = None) -> Optio
         )
         
         if result.returncode != 0:
-            print(f"Error: gh api failed: {result.stderr}")
+            print(f"Error: gh api failed: {result.stderr}", file=sys.stderr)
+            print(f"-- Command used: {' '.join(cmd)}", file=sys.stderr)
             return None
         
         return json.loads(result.stdout)
         
     except subprocess.TimeoutExpired:
-        print(f"Error: gh api request timed out for {endpoint}")
+        print(f"Error: gh api request timed out for {endpoint}", file=sys.stderr)
         return None
     except json.JSONDecodeError as e:
-        print(f"Error: Failed to parse JSON response: {e}")
+        print(f"Error: Failed to parse JSON response: {e}", file=sys.stderr)
         return None
     except Exception as e:
-        print(f"Error running gh api: {e}")
+        print(f"Error running gh api: {e}", file=sys.stderr)
         return None
 
 
@@ -504,3 +506,4 @@ def get_workflow_run_timing(
         'total_job_time_seconds': total_job_time,
         'jobs': job_timings
     }
+    
