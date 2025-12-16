@@ -15,6 +15,7 @@ import json
 import subprocess
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List, Any
+from urllib.parse import urlencode
 
 
 def _check_gh_cli() -> bool:
@@ -75,12 +76,13 @@ def _run_gh_api(endpoint: str, params: Optional[Dict[str, str]] = None) -> Optio
     if not _check_gh_cli():
         return None
     
-    cmd = ['gh', 'api', endpoint]
+    # Build URL with query parameters
+    url = endpoint
+    if params:
+        query_string = urlencode(params)
+        url = f"{endpoint}?{query_string}"
     
-    # Add query parameters
-#    if params:
-#        for key, value in params.items():
-#            cmd.extend(['-F', f'{key}={value}'])
+    cmd = ['gh', 'api', url]
     
     try:
         result = subprocess.run(

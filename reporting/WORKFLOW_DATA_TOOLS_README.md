@@ -21,6 +21,8 @@ Core data collection utilities.
 
 **Note:** `list_workflow_runs()` uses the general `/actions/runs` endpoint and filters results in Python. This is more reliable than the workflow-specific endpoint which requires exact workflow file names and can return 404 for workflows that exist but haven't run recently.
 
+**Query parameters:** All functions properly encode query parameters in the URL (e.g., `created>=2024-12-09` is URL-encoded). This fixed an issue where `-F` flags weren't working for GET requests.
+
 **Error Handling:**
 - Returns `None` on errors (follows project pattern)
 - Logs errors to console
