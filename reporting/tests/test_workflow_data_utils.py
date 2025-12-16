@@ -259,6 +259,34 @@ def test_filter_fields():
     assert len(filtered) == len(data), "None fields should return all data"
     print("  ✓ None fields returns all data")
     
+    # Test with array of objects and nested field
+    array_data = {
+        'id': 123,
+        'name': 'job',
+        'steps': [
+            {'name': 'step1', 'status': 'completed', 'number': 1},
+            {'name': 'step2', 'status': 'completed', 'number': 2},
+            {'name': 'step3', 'status': 'failed', 'number': 3}
+        ]
+    }
+    
+    filtered = _filter_fields(array_data, ['id', 'steps.name'])
+    assert 'id' in filtered, "Should include 'id' field"
+    assert 'steps' in filtered, "Should include 'steps' array"
+    assert len(filtered['steps']) == 3, "Should preserve array length"
+    assert 'name' in filtered['steps'][0], "Should include nested 'name' field"
+    assert 'status' not in filtered['steps'][0], "Should filter out 'status' field"
+    assert filtered['steps'][0]['name'] == 'step1', "Should preserve values"
+    print("  ✓ Array of objects with nested field filtering works")
+    
+    # Test with multiple nested fields in array
+    filtered = _filter_fields(array_data, ['steps.name', 'steps.status'])
+    assert len(filtered['steps']) == 3, "Should preserve array length"
+    assert 'name' in filtered['steps'][0], "Should include 'name'"
+    assert 'status' in filtered['steps'][0], "Should include 'status'"
+    assert 'number' not in filtered['steps'][0], "Should filter out 'number'"
+    print("  ✓ Multiple nested fields in array works")
+    
     print("  ✓ All field filtering tests passed")
 
 

@@ -122,8 +122,14 @@ def _filter_fields(data: Any, fields: Optional[List[str]]) -> Any:
         
     Note:
         - Supports dot notation for nested fields (e.g., 'actor.login')
+        - Supports arrays with dot notation (e.g., 'steps.name' filters each step)
         - If field doesn't exist, it's omitted from output
-        - Works recursively on lists
+        - Works recursively on lists and nested structures
+        
+    Example:
+        >>> data = {'id': 1, 'steps': [{'name': 'a', 'status': 'ok'}, {'name': 'b', 'status': 'ok'}]}
+        >>> _filter_fields(data, ['id', 'steps.name'])
+        {'id': 1, 'steps': [{'name': 'a'}, {'name': 'b'}]}
     """
     if fields is None:
         return data
@@ -134,24 +140,57 @@ def _filter_fields(data: Any, fields: Optional[List[str]]) -> Any:
     if not isinstance(data, dict):
         return data
     
-    filtered = {}
+    # Group fields by their first part (before first dot)
+    # This handles multiple nested fields from same parent
+    simple_fields = []
+    nested_fields = {}
+    
     for field in fields:
-        # Support dot notation for nested fields
         if '.' in field:
             parts = field.split('.', 1)
             first, rest = parts[0], parts[1]
-            if first in data:
-                nested_value = data[first]
-                if isinstance(nested_value, dict):
-                    nested_filtered = _filter_fields(nested_value, [rest])
-                    if rest in nested_filtered:
-                        if first not in filtered:
-                            filtered[first] = {}
-                        filtered[first][rest] = nested_filtered[rest]
+            if first not in nested_fields:
+                nested_fields[first] = []
+            nested_fields[first].append(rest)
         else:
-            # Simple field
-            if field in data:
-                filtered[field] = data[field]
+            simple_fields.append(field)
+    
+    filtered = {}
+    
+    # Handle simple fields
+    for field in simple_fields:
+        if field in data:
+            filtered[field] = data[field]
+    
+    # Handle nested fields
+    for parent, subfields in nested_fields.items():
+        if parent not in data:
+            continue
+            
+        nested_value = data[parent]
+        
+        if isinstance(nested_value, dict):
+            # Nested object - filter it with all subfields
+            nested_filtered = _filter_fields(nested_value, subfields)
+            # Only include if any subfields matched
+            if nested_filtered:
+                filtered[parent] = nested_filtered
+                
+        elif isinstance(nested_value, list):
+            # Array of objects - filter each item with all subfields
+            filtered_array = []
+            for item in nested_value:
+                if isinstance(item, dict):
+                    item_filtered = _filter_fields(item, subfields)
+                    # Only include items where at least one field exists
+                    if item_filtered:
+                        filtered_array.append(item_filtered)
+                else:
+                    # Array of primitives - can't filter further
+                    filtered_array.append(item)
+            
+            if filtered_array:
+                filtered[parent] = filtered_array
     
     return filtered
 
