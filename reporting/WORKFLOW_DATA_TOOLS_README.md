@@ -126,11 +126,40 @@ python3 workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name
 python3 workflow-data.py list-jobs rbwatson to-do-service-auto 12345 --fields "id,name,conclusion,started_at,completed_at"
 ```
 
+**Filter array fields (e.g., steps in a job):**
+```bash
+# Get just step names
+python3 workflow-data.py get-job rbwatson to-do-service-auto 67890 --fields "id,name,steps.name"
+
+# Get multiple fields from each step
+python3 workflow-data.py get-job rbwatson to-do-service-auto 67890 --fields "steps.name,steps.conclusion,steps.number"
+
+# Combine with top-level fields
+python3 workflow-data.py get-job rbwatson to-do-service-auto 67890 --fields "id,name,conclusion,steps.name,steps.conclusion"
+```
+
+Output example:
+```json
+{
+  "id": 67890,
+  "name": "Lint Markdown Files",
+  "conclusion": "success",
+  "steps": [
+    {"name": "Checkout code", "conclusion": "success"},
+    {"name": "Setup Python", "conclusion": "success"},
+    {"name": "Run linters", "conclusion": "success"}
+  ]
+}
+```
+
 ### Notes
 
 - If a field doesn't exist, it's omitted from output (no error)
 - Field filtering happens after API response, so doesn't reduce API quota usage
 - Useful for exploration: start with all fields, then narrow down to what you need
+- **Array filtering**: Use `array.field` syntax to filter fields within arrays (e.g., `steps.name`)
+- **Multiple array fields**: Can specify multiple fields from the same array (e.g., `steps.name,steps.conclusion`)
+- All items in the array are preserved, only their fields are filtered
 
 ## Usage
 

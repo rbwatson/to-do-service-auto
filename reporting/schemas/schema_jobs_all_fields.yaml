@@ -1,0 +1,141 @@
+# Default schema: All job fields from a workflow run
+# Mode: Denormalized (expands jobs array into rows, includes run context)
+# Use this as a starting point - copy and remove fields you don't need
+
+jobs_all_fields:
+  description: "Complete job data with run context"
+  mode: denormalized
+  expand: jobs
+  format: csv
+  
+  fields:
+    # Run context (repeated for each job)
+    - source: id
+      column: run_id
+      type: integer
+    
+    - source: name
+      column: run_name
+      type: string
+    
+    - source: head_branch
+      column: run_branch
+      type: string
+    
+    - source: head_sha
+      column: run_commit_sha
+      type: string
+    
+    - source: event
+      column: run_trigger_event
+      type: string
+    
+    - source: status
+      column: run_status
+      type: string
+    
+    - source: conclusion
+      column: run_conclusion
+      type: string
+    
+    - source: created_at
+      column: run_created_at
+      type: timestamp
+      format: "%Y-%m-%d %H:%M:%S"
+    
+    - source: run_started_at
+      column: run_started_at
+      type: timestamp
+      format: "%Y-%m-%d %H:%M:%S"
+    
+    # Job fields (from jobs array)
+    - source: jobs.id
+      column: job_id
+      type: integer
+    
+    - source: jobs.run_id
+      column: job_run_id
+      type: integer
+    
+    - source: jobs.workflow_name
+      column: job_workflow_name
+      type: string
+    
+    - source: jobs.head_branch
+      column: job_branch
+      type: string
+    
+    - source: jobs.run_url
+      column: job_run_url
+      type: url
+    
+    - source: jobs.run_attempt
+      column: job_run_attempt
+      type: integer
+    
+    - source: jobs.node_id
+      column: job_node_id
+      type: string
+    
+    - source: jobs.head_sha
+      column: job_commit_sha
+      type: string
+    
+    - source: jobs.url
+      column: job_api_url
+      type: url
+    
+    - source: jobs.html_url
+      column: job_web_url
+      type: url
+    
+    - source: jobs.status
+      column: job_status
+      type: string
+    
+    - source: jobs.conclusion
+      column: job_conclusion
+      type: string
+    
+    - source: jobs.created_at
+      column: job_created_at
+      type: timestamp
+      format: "%Y-%m-%d %H:%M:%S"
+    
+    - source: jobs.started_at
+      column: job_started_at
+      type: timestamp
+      format: "%Y-%m-%d %H:%M:%S"
+    
+    - source: jobs.completed_at
+      column: job_completed_at
+      type: timestamp
+      format: "%Y-%m-%d %H:%M:%S"
+    
+    - source: jobs.name
+      column: job_name
+      type: string
+    
+    - source: jobs.check_run_url
+      column: job_check_run_url
+      type: url
+    
+    - source: jobs.labels
+      column: job_labels
+      type: string
+    
+    - source: jobs.runner_id
+      column: runner_id
+      type: integer
+    
+    - source: jobs.runner_name
+      column: runner_name
+      type: string
+    
+    - source: jobs.runner_group_id
+      column: runner_group_id
+      type: integer
+    
+    - source: jobs.runner_group_name
+      column: runner_group_name
+      type: string

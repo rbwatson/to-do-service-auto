@@ -53,6 +53,7 @@ from workflow_data_utils import (
     get_workflow_job_details,
     get_workflow_run_timing
 )
+from csv_formatter import load_schema, format_as_csv, save_csv
 
 
 def parse_fields(fields_str):
@@ -62,16 +63,51 @@ def parse_fields(fields_str):
     return [f.strip() for f in fields_str.split(',') if f.strip()]
 
 
-def output_json(data, pretty=True):
-    """Output data as JSON."""
+def output_data(data, args):
+    """Output data in requested format (JSON or CSV)."""
     if data is None:
         print("Error: No data to output", file=sys.stderr)
         sys.exit(1)
     
-    if pretty:
-        print(json.dumps(data, indent=2))
+    # Check for CSV output
+    if hasattr(args, 'format') and args.format == 'csv':
+        if not hasattr(args, 'schema') or not args.schema:
+            print("Error: --schema required for CSV output", file=sys.stderr)
+            sys.exit(1)
+        
+        # Load schema
+        schema_path = Path(args.schema)
+        if not schema_path.exists():
+            # Try in current directory
+            schema_path = Path.cwd() / args.schema
+        if not schema_path.exists():
+            # Try as built-in schema
+            schema_path = Path(__file__).parent / f"schema_{args.schema}.yaml"
+        
+        schema = load_schema(schema_path)
+        if not schema:
+            sys.exit(1)
+        
+        # Format as CSV
+        csv_output = format_as_csv(data, schema)
+        
+        # Output or save
+        if hasattr(args, 'output') and args.output:
+            output_path = Path(args.output)
+            append = hasattr(args, 'append') and args.append
+            if save_csv(csv_output, output_path, append):
+                print(f"CSV written to {output_path}")
+            else:
+                sys.exit(1)
+        else:
+            print(csv_output, end='')
     else:
-        print(json.dumps(data))
+        # JSON output (default)
+        pretty = not (hasattr(args, 'compact') and args.compact)
+        if pretty:
+            print(json.dumps(data, indent=2))
+        else:
+            print(json.dumps(data))
 
 
 def cmd_list_runs(args):
@@ -91,7 +127,7 @@ def cmd_list_runs(args):
     if runs is None:
         sys.exit(1)
     
-    output_json(runs, pretty=not args.compact)
+    output_data(runs, args)
 
 
 def cmd_get_run(args):
@@ -108,7 +144,7 @@ def cmd_get_run(args):
     if details is None:
         sys.exit(1)
     
-    output_json(details, pretty=not args.compact)
+    output_data(details, args)
 
 
 def cmd_list_jobs(args):
@@ -125,7 +161,7 @@ def cmd_list_jobs(args):
     if jobs is None:
         sys.exit(1)
     
-    output_json(jobs, pretty=not args.compact)
+    output_data(jobs, args)
 
 
 def cmd_get_job(args):
@@ -142,7 +178,7 @@ def cmd_get_job(args):
     if job is None:
         sys.exit(1)
     
-    output_json(job, pretty=not args.compact)
+    output_data(job, args)
 
 
 def cmd_timing(args):
@@ -156,7 +192,7 @@ def cmd_timing(args):
     if timing is None:
         sys.exit(1)
     
-    output_json(timing, pretty=not args.compact)
+    output_data(timing, args)
 
 
 def main():
@@ -177,6 +213,14 @@ def main():
                              help='Output compact JSON (no pretty-printing)')
         subparser.add_argument('--fields',
                              help='Comma-separated list of fields to return (e.g., "id,name,conclusion")')
+        subparser.add_argument('--format', choices=['json', 'csv'], default='json',
+                             help='Output format (default: json)')
+        subparser.add_argument('--schema',
+                             help='Schema file for CSV output (required when --format=csv)')
+        subparser.add_argument('--output',
+                             help='Output file path (default: stdout)')
+        subparser.add_argument('--append', action='store_true',
+                             help='Append to output file instead of overwriting (CSV only)')
     
     # list-runs command
     parser_list = subparsers.add_parser('list-runs',
