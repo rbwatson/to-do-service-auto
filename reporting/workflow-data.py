@@ -11,17 +11,37 @@ Usage:
     workflow-data.py get-run-timing <owner> <repo> <run-id> [options]
 
 Examples:
-    # List recent workflow runs (all workflows)
+    # List recent workflow runs (default: 10 most recent)
     workflow-data.py list-runs <owner> <repo>
+    
+    # List all runs in last 7 days
+    workflow-data.py list-runs <owner> <repo> --days 7
+    
+    # List exactly 50 most recent runs
+    workflow-data.py list-runs <owner> <repo> --limit 50
+    
+    # List up to 20 runs within last 14 days
+    workflow-data.py list-runs <owner> <repo> --days 14 --limit 20
     
     # Filter to specific workflow
     workflow-data.py list-runs <owner> <repo> --workflow pr-validation.yml
     
-    # List runs from last 14 days
-    workflow-data.py list-runs <owner> <repo> --days 14
-    
-    # Return only specific fields
+    # Return only specific fields (JSON output)
     workflow-data.py list-runs <owner> <repo> --fields "id,name,conclusion,created_at"
+    
+    # Output as CSV with schema
+    workflow-data.py list-runs <owner> <repo> \
+        --format csv --schema schema_runs_all_fields.yaml
+    
+    # Save CSV to file
+    workflow-data.py list-runs <owner> <repo> \
+        --format csv --schema schema_runs_all_fields.yaml \
+        --output runs.csv
+    
+    # Append to existing CSV file
+    workflow-data.py list-runs <owner> <repo> --days 1 \
+        --format csv --schema schema_runs_all_fields.yaml \
+        --output runs.csv --append
     
     # Get run with specific fields (including nested)
     workflow-data.py get-run <owner> <repo> <run-id> --fields "id,name,actor.login"
@@ -35,8 +55,15 @@ Examples:
     # Get detailed job information
     workflow-data.py get-job <owner> <repo> <job-id>
     
-    # Get timing for multiple runs
+    # Get timing for 10 most recent runs (default, safe)
+    workflow-data.py list-run-timing <owner> <repo>
+    
+    # Get timing for all runs in last 7 days
     workflow-data.py list-run-timing <owner> <repo> --days 7
+    
+    # Get timing for exactly 25 runs as CSV
+    workflow-data.py list-run-timing <owner> <repo> --limit 25 \
+        --format csv --schema schema_run_timing.yaml
     
     # Get timing for a single run
     workflow-data.py get-run-timing <owner> <repo> <run-id>
@@ -127,9 +154,10 @@ def cmd_list_runs(args):
         repo_owner=args.owner,
         repo_name=args.repo,
         workflow_name=args.workflow,
-        days_back=args.days,
+        days_back=args.days if hasattr(args, 'days') else None,
         branch=args.branch,
         status=args.status,
+        limit=args.limit if hasattr(args, 'limit') else None,
         fields=fields
     )
     
@@ -196,9 +224,10 @@ def cmd_list_run_timing(args):
         repo_owner=args.owner,
         repo_name=args.repo,
         workflow_name=args.workflow if hasattr(args, 'workflow') else None,
-        days_back=args.days if hasattr(args, 'days') else 7,
+        days_back=args.days if hasattr(args, 'days') else None,
         branch=args.branch if hasattr(args, 'branch') else None,
-        status=args.status if hasattr(args, 'status') else None
+        status=args.status if hasattr(args, 'status') else None,
+        limit=args.limit if hasattr(args, 'limit') else None
     )
     
     if timing_data is None:
@@ -254,8 +283,10 @@ def main():
     add_common_args(parser_list)
     parser_list.add_argument('--workflow',
                            help='Filter by workflow file name (e.g., pr-validation.yml)')
-    parser_list.add_argument('--days', type=int, default=7,
-                           help='Days of history to retrieve (default: 7)')
+    parser_list.add_argument('--days', type=int,
+                           help='Days of history to retrieve (default: unlimited with limit=10)')
+    parser_list.add_argument('--limit', type=int,
+                           help='Maximum number of runs to return (default: 10, use 0 for unlimited)')
     parser_list.add_argument('--branch',
                            help='Filter by branch name')
     parser_list.add_argument('--status',
@@ -290,8 +321,10 @@ def main():
     add_common_args(parser_list_timing)
     parser_list_timing.add_argument('--workflow',
                                    help='Filter to specific workflow file')
-    parser_list_timing.add_argument('--days', type=int, default=7,
-                                   help='Number of days to look back (default: 7)')
+    parser_list_timing.add_argument('--days', type=int,
+                                   help='Number of days to look back (default: unlimited with limit=10)')
+    parser_list_timing.add_argument('--limit', type=int,
+                                   help='Maximum number of runs to return (default: 10, use 0 for unlimited)')
     parser_list_timing.add_argument('--branch',
                                    help='Filter to specific branch')
     parser_list_timing.add_argument('--status',

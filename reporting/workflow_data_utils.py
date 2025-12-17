@@ -201,9 +201,10 @@ def list_workflow_runs(
     repo_owner: str,
     repo_name: str,
     workflow_name: Optional[str] = None,
-    days_back: int = 7,
+    days_back: Optional[int] = None,
     branch: Optional[str] = None,
     status: Optional[str] = None,
+    limit: Optional[int] = None,
     fields: Optional[List[str]] = None
 ) -> Optional[List[Dict[str, Any]]]:
     """
@@ -214,9 +215,13 @@ def list_workflow_runs(
         repo_name: Repository name
         workflow_name: Optional workflow file name to filter results (e.g. 'pr-validation.yml')
                       If None, returns all workflows
-        days_back: Number of days of history to retrieve (default: 7)
+        days_back: Number of days of history to retrieve
+                  If None and limit not specified, defaults to unlimited with limit=10
         branch: Optional branch name filter
         status: Optional status filter ('completed', 'in_progress', 'queued', etc.)
+        limit: Maximum number of runs to return
+               If None and days_back not specified, defaults to 10
+               If 0, returns all runs (unlimited)
         fields: Optional list of field names to include in results
                 Supports dot notation (e.g., ['id', 'name', 'actor.login'])
                 If None, returns all fields
@@ -225,12 +230,27 @@ def list_workflow_runs(
         List of workflow run dictionaries, or None on error
         Each dict contains: id, name, status, conclusion, created_at, html_url, etc.
         
+    Limit Behavior:
+        - No args specified: Returns 10 most recent runs
+        - --days 7: Returns all runs in last 7 days (unlimited)
+        - --limit 50: Returns 50 most recent runs
+        - --days 7 --limit 50: Returns up to 50 runs within last 7 days
+        - --limit 0: Returns all runs (no limit)
+        
     Example:
+        >>> # Default: 10 most recent runs
         >>> runs = list_workflow_runs('<owner>', '<repo>')
         >>> len(runs)
-        15
-        >>> runs[0]['conclusion']
-        'success'
+        10
+        
+        >>> # All runs in last 7 days
+        >>> runs = list_workflow_runs('<owner>', '<repo>', days_back=7)
+        
+        >>> # Exactly 50 most recent runs
+        >>> runs = list_workflow_runs('<owner>', '<repo>', limit=50)
+        
+        >>> # Up to 50 runs within last 30 days
+        >>> runs = list_workflow_runs('<owner>', '<repo>', days_back=30, limit=50)
         
         >>> # Filter to specific workflow
         >>> runs = list_workflow_runs('<owner>', '<repo>', 
@@ -242,17 +262,24 @@ def list_workflow_runs(
         >>> runs[0].keys()
         dict_keys(['id', 'name', 'conclusion'])
     """
+    # Determine default behavior
+    if days_back is None and limit is None:
+        # Default: 10 most recent runs
+        limit = 10
+    elif days_back is not None and limit is None:
+        # Days specified but no limit: unlimited
+        limit = 0
+    
     # Use general actions/runs endpoint (more reliable than workflow-specific)
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs'
     
-    # Calculate date cutoff (timezone-aware)
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
-    created_filter = cutoff_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+    params = {'per_page': '100'}
     
-    params = {
-        'per_page': '100',
-        'created': f'>={created_filter}'
-    }
+    # Add date filter if specified
+    if days_back is not None:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
+        created_filter = cutoff_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+        params['created'] = f'>={created_filter}'
     
     if branch:
         params['branch'] = branch
@@ -266,11 +293,15 @@ def list_workflow_runs(
     
     workflow_runs = response.get('workflow_runs', [])
     
-    # Filter by date (GitHub's created filter sometimes returns more)
-    filtered_runs = [
-        run for run in workflow_runs
-        if datetime.fromisoformat(run['created_at'].replace('Z', '+00:00')) >= cutoff_date
-    ]
+    # Filter by date if specified (GitHub's created filter sometimes returns more)
+    if days_back is not None:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_back)
+        filtered_runs = [
+            run for run in workflow_runs
+            if datetime.fromisoformat(run['created_at'].replace('Z', '+00:00')) >= cutoff_date
+        ]
+    else:
+        filtered_runs = workflow_runs
     
     # Filter by workflow name if specified
     if workflow_name:
@@ -279,6 +310,10 @@ def list_workflow_runs(
             if run.get('path', '').endswith(workflow_name) or 
                run.get('name', '') == workflow_name
         ]
+    
+    # Apply limit if specified (0 = unlimited)
+    if limit is not None and limit > 0:
+        filtered_runs = filtered_runs[:limit]
     
     # Filter fields if specified
     if fields:
@@ -436,9 +471,10 @@ def list_workflow_run_timing(
     repo_owner: str,
     repo_name: str,
     workflow_name: Optional[str] = None,
-    days_back: int = 7,
+    days_back: Optional[int] = None,
     branch: Optional[str] = None,
-    status: Optional[str] = None
+    status: Optional[str] = None,
+    limit: Optional[int] = None
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get timing information for multiple workflow runs.
@@ -450,9 +486,13 @@ def list_workflow_run_timing(
         repo_owner: Repository owner (username or organization)
         repo_name: Repository name
         workflow_name: Optional filter for specific workflow file
-        days_back: Number of days to look back (default: 7)
+        days_back: Number of days to look back
+                  If None and limit not specified, defaults to limit=10
         branch: Optional branch filter
         status: Optional status filter (completed, success, failure)
+        limit: Maximum number of runs to return
+               If None and days_back not specified, defaults to 10
+               If 0, returns all runs (unlimited)
         
     Returns:
         List of dicts, one per run, containing:
@@ -464,10 +504,24 @@ def list_workflow_run_timing(
         
         Returns None on error.
         
+    Limit Behavior:
+        - No args specified: Returns timing for 10 most recent runs (20 API calls)
+        - --days 7: Returns all runs in last 7 days (potentially 100+ API calls)
+        - --limit 50: Returns timing for 50 most recent runs (100 API calls)
+        - --days 7 --limit 20: Returns up to 20 runs within last 7 days (40 API calls)
+        
     Example:
-        >>> timings = list_workflow_run_timing('<owner>', '<repo>', days_back=7)
+        >>> # Default: 10 most recent runs (safe)
+        >>> timings = list_workflow_run_timing('<owner>', '<repo>')
         >>> len(timings)
-        15
+        10
+        
+        >>> # All runs in last 7 days (may be many API calls)
+        >>> timings = list_workflow_run_timing('<owner>', '<repo>', days_back=7)
+        
+        >>> # Exactly 50 runs (100 API calls)
+        >>> timings = list_workflow_run_timing('<owner>', '<repo>', limit=50)
+        
         >>> timings[0]['run_id']
         <run-id>
         >>> timings[0]['run_name']
@@ -477,7 +531,7 @@ def list_workflow_run_timing(
         >>> timings[0]['jobs'][0]['duration_seconds']
         45.2
     """
-    # Get list of runs
+    # Get list of runs (with limit applied)
     runs = list_workflow_runs(
         repo_owner=repo_owner,
         repo_name=repo_name,
@@ -485,6 +539,7 @@ def list_workflow_run_timing(
         days_back=days_back,
         branch=branch,
         status=status,
+        limit=limit,
         fields=None  # Get all fields
     )
     
