@@ -2,8 +2,11 @@
 # Mode: Denormalized (single CSV file)
 # Use this as a starting point - copy and remove fields you don't need
 #
-# Use this script with the list-runs command to get all workflow run data
+# Use this schema with the list-runs command to get all workflow run data
 #
+# Example usage:
+#   workflow-data.py list-runs rbwatson repo \
+#     --format csv --schema schema_runs_all_fields.yaml
 
 runs_all_fields:
   description: "Complete workflow run data with all available fields"

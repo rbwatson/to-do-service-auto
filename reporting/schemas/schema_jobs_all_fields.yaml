@@ -1,11 +1,13 @@
 # Default schema: All job fields from list-jobs command
 # Mode: Denormalized (jobs are already flat, no expansion needed)
 # Use this as a starting point - copy and remove fields you don't need
-#
-# Use this script with the list-jobs command to get all job data for a workflow run
 # 
 # NOTE: This schema is for 'list-jobs' output which returns flat job objects.
 # The jobs already contain run_id to link back to runs.
+#
+# Example usage:
+#   workflow-data.py list-jobs rbwatson repo 12345678 \
+#     --format csv --schema schema_jobs_all_fields.yaml
 
 jobs_all_fields:
   description: "Complete job data (already flat from list-jobs)"
