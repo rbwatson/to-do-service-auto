@@ -7,41 +7,49 @@ Usage:
     workflow-data.py get-run <owner> <repo> <run-id> [options]
     workflow-data.py list-jobs <owner> <repo> <run-id> [options]
     workflow-data.py get-job <owner> <repo> <job-id> [options]
-    workflow-data.py timing <owner> <repo> <run-id> [options]
+    workflow-data.py list-run-timing <owner> <repo> [options]
+    workflow-data.py get-run-timing <owner> <repo> <run-id> [options]
 
 Examples:
     # List recent workflow runs (all workflows)
-    workflow-data.py list-runs <github-account> <repo>
+    workflow-data.py list-runs <owner> <repo>
     
     # Filter to specific workflow
-    workflow-data.py list-runs <github-account> <repo> --workflow pr-validation.yml
+    workflow-data.py list-runs <owner> <repo> --workflow pr-validation.yml
     
     # List runs from last 14 days
-    workflow-data.py list-runs <github-account> <repo> --days 14
+    workflow-data.py list-runs <owner> <repo> --days 14
     
     # Return only specific fields
-    workflow-data.py list-runs <github-account> <repo> --fields "id,name,conclusion,created_at"
+    workflow-data.py list-runs <owner> <repo> --fields "id,name,conclusion,created_at"
     
     # Get run with specific fields (including nested)
-    workflow-data.py get-run <github-account> <repo> <run-id> --fields "id,name,actor.login"
+    workflow-data.py get-run <owner> <repo> <run-id> --fields "id,name,actor.login"
     
     # List all jobs in a run
-    workflow-data.py list-jobs <github-account> <repo> <run-id>
+    workflow-data.py list-jobs <owner> <repo> <run-id>
     
     # List jobs with specific fields
-    workflow-data.py list-jobs <github-account> <repo> <run-id> --fields "id,name,conclusion"
+    workflow-data.py list-jobs <owner> <repo> <run-id> --fields "id,name,conclusion"
     
     # Get detailed job information
-    workflow-data.py get-job <github-account> <repo> <job-id>
+    workflow-data.py get-job <owner> <repo> <job-id>
     
-    # Get timing information for a run
-    workflow-data.py timing <github-account> <repo> <run-id>
+    # Get timing for multiple runs
+    workflow-data.py list-run-timing <owner> <repo> --days 7
+    
+    # Get timing for a single run
+    workflow-data.py get-run-timing <owner> <repo> <run-id>
 """
 
 import sys
 import json
 import argparse
+import signal
 from pathlib import Path
+
+# Handle broken pipe gracefully (e.g., when piping to head)
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -51,6 +59,7 @@ from workflow_data_utils import (
     get_workflow_run_details,
     list_workflow_jobs,
     get_workflow_job_details,
+    list_workflow_run_timing,
     get_workflow_run_timing
 )
 from csv_formatter import load_schema, format_as_csv, save_csv
@@ -181,8 +190,25 @@ def cmd_get_job(args):
     output_data(job, args)
 
 
-def cmd_timing(args):
-    """Get timing information for a workflow run."""
+def cmd_list_run_timing(args):
+    """Get timing information for multiple workflow runs."""
+    timing_data = list_workflow_run_timing(
+        repo_owner=args.owner,
+        repo_name=args.repo,
+        workflow_name=args.workflow if hasattr(args, 'workflow') else None,
+        days_back=args.days if hasattr(args, 'days') else 7,
+        branch=args.branch if hasattr(args, 'branch') else None,
+        status=args.status if hasattr(args, 'status') else None
+    )
+    
+    if timing_data is None:
+        sys.exit(1)
+    
+    output_data(timing_data, args)
+
+
+def cmd_get_run_timing(args):
+    """Get timing information for a single workflow run."""
     timing = get_workflow_run_timing(
         repo_owner=args.owner,
         repo_name=args.repo,
@@ -258,12 +284,26 @@ def main():
     parser_job.add_argument('job_id', type=int, help='Job ID')
     parser_job.set_defaults(func=cmd_get_job)
     
-    # timing command
-    parser_timing = subparsers.add_parser('timing',
-                                          help='Get timing information for a run')
-    add_common_args(parser_timing)
-    parser_timing.add_argument('run_id', type=int, help='Workflow run ID')
-    parser_timing.set_defaults(func=cmd_timing)
+    # list-run-timing command
+    parser_list_timing = subparsers.add_parser('list-run-timing',
+                                               help='Get timing for multiple workflow runs')
+    add_common_args(parser_list_timing)
+    parser_list_timing.add_argument('--workflow',
+                                   help='Filter to specific workflow file')
+    parser_list_timing.add_argument('--days', type=int, default=7,
+                                   help='Number of days to look back (default: 7)')
+    parser_list_timing.add_argument('--branch',
+                                   help='Filter to specific branch')
+    parser_list_timing.add_argument('--status',
+                                   help='Filter by status (completed, success, failure)')
+    parser_list_timing.set_defaults(func=cmd_list_run_timing)
+    
+    # get-run-timing command
+    parser_get_timing = subparsers.add_parser('get-run-timing',
+                                             help='Get timing for a single workflow run')
+    add_common_args(parser_get_timing)
+    parser_get_timing.add_argument('run_id', type=int, help='Workflow run ID')
+    parser_get_timing.set_defaults(func=cmd_get_run_timing)
     
     args = parser.parse_args()
     args.func(args)

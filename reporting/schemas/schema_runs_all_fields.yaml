@@ -5,7 +5,7 @@
 # Use this schema with the list-runs command to get all workflow run data
 #
 # Example usage:
-#   workflow-data.py list-runs <github-account> <repo> \
+#   workflow-data.py list-runs <owner> <repo> \
 #     --format csv --schema schema_runs_all_fields.yaml
 
 runs_all_fields:

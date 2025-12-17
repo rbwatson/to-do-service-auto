@@ -226,18 +226,18 @@ def list_workflow_runs(
         Each dict contains: id, name, status, conclusion, created_at, html_url, etc.
         
     Example:
-        >>> runs = list_workflow_runs('<github-account>', '<repo>')
+        >>> runs = list_workflow_runs('<owner>', '<repo>')
         >>> len(runs)
         15
         >>> runs[0]['conclusion']
         'success'
         
         >>> # Filter to specific workflow
-        >>> runs = list_workflow_runs('<github-account>', '<repo>', 
+        >>> runs = list_workflow_runs('<owner>', '<repo>', 
         ...                           workflow_name='pr-validation.yml')
         
         >>> # Return only specific fields
-        >>> runs = list_workflow_runs('<github-account>', '<repo>',
+        >>> runs = list_workflow_runs('<owner>', '<repo>',
         ...                           fields=['id', 'name', 'conclusion'])
         >>> runs[0].keys()
         dict_keys(['id', 'name', 'conclusion'])
@@ -310,14 +310,14 @@ def get_workflow_run_details(
                   run_started_at, html_url, jobs_url, logs_url, timing_ms, etc.
         
     Example:
-        >>> details = get_workflow_run_details('<github-account>', '<repo>', '<run-id>')
+        >>> details = get_workflow_run_details('<owner>', '<repo>', <run-id>)
         >>> details['conclusion']
         'success'
         >>> details['run_duration_ms']
         125000
         
         >>> # Return only specific fields
-        >>> details = get_workflow_run_details('<github-account>', '<repo>', '<run-id>',
+        >>> details = get_workflow_run_details('<owner>', '<repo>', <run-id>,
         ...                                     fields=['id', 'conclusion', 'created_at'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs/{run_id}'
@@ -356,14 +356,14 @@ def list_workflow_jobs(
                            completed_at, steps, etc.
         
     Example:
-        >>> jobs = list_workflow_jobs('<github-account>', '<repo>', '<run-id>')
+        >>> jobs = list_workflow_jobs('<owner>', '<repo>', <run-id>)
         >>> len(jobs)
         4
         >>> jobs[0]['name']
         'Validate Testing Tools'
         
         >>> # Return only specific fields
-        >>> jobs = list_workflow_jobs('<github-account>', '<repo>', '<run-id>',
+        >>> jobs = list_workflow_jobs('<owner>', '<repo>', <run-id>,
         ...                           fields=['id', 'name', 'conclusion'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs/{run_id}/jobs'
@@ -407,7 +407,7 @@ def get_workflow_job_details(
                  completed_at for each step)
         
     Example:
-        >>> job = get_workflow_job_details('<github-account>', '<repo>', '<job-id>')
+        >>> job = get_workflow_job_details('<owner>', '<repo>', 67890)
         >>> job['name']
         'Lint Markdown Files'
         >>> len(job['steps'])
@@ -416,7 +416,7 @@ def get_workflow_job_details(
         'Checkout code'
         
         >>> # Return only specific fields
-        >>> job = get_workflow_job_details('<github-account>', '<repo>', '<job-id>',
+        >>> job = get_workflow_job_details('<owner>', '<repo>', 67890,
         ...                                 fields=['id', 'name', 'conclusion'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/jobs/{job_id}'
@@ -432,13 +432,147 @@ def get_workflow_job_details(
     return response
 
 
+def list_workflow_run_timing(
+    repo_owner: str,
+    repo_name: str,
+    workflow_name: Optional[str] = None,
+    days_back: int = 7,
+    branch: Optional[str] = None,
+    status: Optional[str] = None
+) -> Optional[List[Dict[str, Any]]]:
+    """
+    Get timing information for multiple workflow runs.
+    
+    Returns denormalized timing data with run context repeated for each job.
+    This enables analysis of timing trends across multiple runs.
+    
+    Args:
+        repo_owner: Repository owner (username or organization)
+        repo_name: Repository name
+        workflow_name: Optional filter for specific workflow file
+        days_back: Number of days to look back (default: 7)
+        branch: Optional branch filter
+        status: Optional status filter (completed, success, failure)
+        
+    Returns:
+        List of dicts, one per run, containing:
+        - run_id, run_name, run_number, run_created_at, run_updated_at
+        - run_status, run_conclusion, run_duration_seconds
+        - actor (dict with login)
+        - jobs (list with name, status, conclusion, duration_seconds)
+        - total_job_time_seconds
+        
+        Returns None on error.
+        
+    Example:
+        >>> timings = list_workflow_run_timing('<owner>', '<repo>', days_back=7)
+        >>> len(timings)
+        15
+        >>> timings[0]['run_id']
+        <run-id>
+        >>> timings[0]['run_name']
+        'PR Validation'
+        >>> timings[0]['jobs'][0]['name']
+        'Validate Testing Tools'
+        >>> timings[0]['jobs'][0]['duration_seconds']
+        45.2
+    """
+    # Get list of runs
+    runs = list_workflow_runs(
+        repo_owner=repo_owner,
+        repo_name=repo_name,
+        workflow_name=workflow_name,
+        days_back=days_back,
+        branch=branch,
+        status=status,
+        fields=None  # Get all fields
+    )
+    
+    if runs is None:
+        return None
+    
+    if not runs:
+        print("No runs found matching criteria", file=sys.stderr)
+        return []
+    
+    # Collect timing for each run
+    result = []
+    
+    for run in runs:
+        run_id = run.get('id')
+        if not run_id:
+            continue
+        
+        # Get run details for accurate timing
+        run_details = get_workflow_run_details(repo_owner, repo_name, run_id)
+        if run_details is None:
+            print(f"Warning: Could not get details for run {run_id}", file=sys.stderr)
+            continue
+        
+        # Get jobs for this run
+        jobs = list_workflow_jobs(repo_owner, repo_name, run_id)
+        if jobs is None:
+            print(f"Warning: Could not get jobs for run {run_id}", file=sys.stderr)
+            continue
+        
+        # Calculate run duration
+        run_started = run_details.get('run_started_at')
+        run_updated = run_details.get('updated_at')
+        
+        run_duration = None
+        if run_started and run_updated:
+            start_time = datetime.fromisoformat(run_started.replace('Z', '+00:00'))
+            end_time = datetime.fromisoformat(run_updated.replace('Z', '+00:00'))
+            run_duration = (end_time - start_time).total_seconds()
+        
+        # Calculate job durations
+        job_timings = []
+        total_job_time = 0
+        
+        for job in jobs:
+            started = job.get('started_at')
+            completed = job.get('completed_at')
+            
+            duration = None
+            if started and completed:
+                start_time = datetime.fromisoformat(started.replace('Z', '+00:00'))
+                end_time = datetime.fromisoformat(completed.replace('Z', '+00:00'))
+                duration = (end_time - start_time).total_seconds()
+                if duration:
+                    total_job_time += duration
+            
+            job_timings.append({
+                'name': job.get('name'),
+                'status': job.get('status'),
+                'conclusion': job.get('conclusion'),
+                'duration_seconds': duration
+            })
+        
+        # Build result record
+        result.append({
+            'run_id': run_details.get('id'),
+            'run_name': run_details.get('name'),
+            'run_number': run_details.get('run_number'),
+            'run_created_at': run_details.get('created_at'),
+            'run_updated_at': run_details.get('updated_at'),
+            'run_status': run_details.get('status'),
+            'run_conclusion': run_details.get('conclusion'),
+            'run_duration_seconds': run_duration,
+            'actor': run_details.get('actor', {}),
+            'jobs': job_timings,
+            'total_job_time_seconds': total_job_time
+        })
+    
+    return result
+
+
 def get_workflow_run_timing(
     repo_owner: str,
     repo_name: str,
     run_id: int
 ) -> Optional[Dict[str, Any]]:
     """
-    Get timing information for a workflow run and its jobs.
+    Get timing information for a single workflow run and its jobs.
     
     Args:
         repo_owner: Repository owner (username or organization)
@@ -448,12 +582,14 @@ def get_workflow_run_timing(
     Returns:
         Dict with timing information, or None on error
         Contains:
+        - run_id, run_name, run_number
         - run_duration_seconds: Total workflow duration
+        - actor (dict with login)
         - jobs: List of dicts with job name, duration_seconds, status
         - total_job_time_seconds: Sum of all job durations
         
     Example:
-        >>> timing = get_workflow_run_timing('<github-account>', '<repo>', '<run-id>')
+        >>> timing = get_workflow_run_timing('<owner>', '<repo>', <run-id>)
         >>> timing['run_duration_seconds']
         125.5
         >>> timing['jobs'][0]['name']
@@ -502,8 +638,15 @@ def get_workflow_run_timing(
         })
     
     return {
+        'run_id': run_details.get('id'),
+        'run_name': run_details.get('name'),
+        'run_number': run_details.get('run_number'),
+        'run_created_at': run_details.get('created_at'),
+        'run_updated_at': run_details.get('updated_at'),
+        'run_status': run_details.get('status'),
+        'run_conclusion': run_details.get('conclusion'),
         'run_duration_seconds': run_duration,
-        'total_job_time_seconds': total_job_time,
-        'jobs': job_timings
+        'actor': run_details.get('actor', {}),
+        'jobs': job_timings,
+        'total_job_time_seconds': total_job_time
     }
-    
