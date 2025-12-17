@@ -226,18 +226,18 @@ def list_workflow_runs(
         Each dict contains: id, name, status, conclusion, created_at, html_url, etc.
         
     Example:
-        >>> runs = list_workflow_runs('rbwatson', 'to-do-service-auto')
+        >>> runs = list_workflow_runs('<github-account>', '<repo>')
         >>> len(runs)
         15
         >>> runs[0]['conclusion']
         'success'
         
         >>> # Filter to specific workflow
-        >>> runs = list_workflow_runs('rbwatson', 'to-do-service-auto', 
+        >>> runs = list_workflow_runs('<github-account>', '<repo>', 
         ...                           workflow_name='pr-validation.yml')
         
         >>> # Return only specific fields
-        >>> runs = list_workflow_runs('rbwatson', 'to-do-service-auto',
+        >>> runs = list_workflow_runs('<github-account>', '<repo>',
         ...                           fields=['id', 'name', 'conclusion'])
         >>> runs[0].keys()
         dict_keys(['id', 'name', 'conclusion'])
@@ -310,14 +310,14 @@ def get_workflow_run_details(
                   run_started_at, html_url, jobs_url, logs_url, timing_ms, etc.
         
     Example:
-        >>> details = get_workflow_run_details('rbwatson', 'to-do-service-auto', 12345)
+        >>> details = get_workflow_run_details('<github-account>', '<repo>', '<run-id>')
         >>> details['conclusion']
         'success'
         >>> details['run_duration_ms']
         125000
         
         >>> # Return only specific fields
-        >>> details = get_workflow_run_details('rbwatson', 'to-do-service-auto', 12345,
+        >>> details = get_workflow_run_details('<github-account>', '<repo>', '<run-id>',
         ...                                     fields=['id', 'conclusion', 'created_at'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs/{run_id}'
@@ -356,14 +356,14 @@ def list_workflow_jobs(
                            completed_at, steps, etc.
         
     Example:
-        >>> jobs = list_workflow_jobs('rbwatson', 'to-do-service-auto', 12345)
+        >>> jobs = list_workflow_jobs('<github-account>', '<repo>', '<run-id>')
         >>> len(jobs)
         4
         >>> jobs[0]['name']
         'Validate Testing Tools'
         
         >>> # Return only specific fields
-        >>> jobs = list_workflow_jobs('rbwatson', 'to-do-service-auto', 12345,
+        >>> jobs = list_workflow_jobs('<github-account>', '<repo>', '<run-id>',
         ...                           fields=['id', 'name', 'conclusion'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/runs/{run_id}/jobs'
@@ -407,7 +407,7 @@ def get_workflow_job_details(
                  completed_at for each step)
         
     Example:
-        >>> job = get_workflow_job_details('rbwatson', 'to-do-service-auto', 67890)
+        >>> job = get_workflow_job_details('<github-account>', '<repo>', '<job-id>')
         >>> job['name']
         'Lint Markdown Files'
         >>> len(job['steps'])
@@ -416,7 +416,7 @@ def get_workflow_job_details(
         'Checkout code'
         
         >>> # Return only specific fields
-        >>> job = get_workflow_job_details('rbwatson', 'to-do-service-auto', 67890,
+        >>> job = get_workflow_job_details('<github-account>', '<repo>', '<job-id>',
         ...                                 fields=['id', 'name', 'conclusion'])
     """
     endpoint = f'/repos/{repo_owner}/{repo_name}/actions/jobs/{job_id}'
@@ -453,7 +453,7 @@ def get_workflow_run_timing(
         - total_job_time_seconds: Sum of all job durations
         
     Example:
-        >>> timing = get_workflow_run_timing('rbwatson', 'to-do-service-auto', 12345)
+        >>> timing = get_workflow_run_timing('<github-account>', '<repo>', '<run-id>')
         >>> timing['run_duration_seconds']
         125.5
         >>> timing['jobs'][0]['name']

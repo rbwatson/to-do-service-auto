@@ -6,7 +6,7 @@
 # The jobs already contain run_id to link back to runs.
 #
 # Example usage:
-#   workflow-data.py list-jobs rbwatson repo 12345678 \
+#   workflow-data.py list-jobs <github-account> <repo> <run-id> \
 #     --format csv --schema schema_jobs_all_fields.yaml
 
 jobs_all_fields:

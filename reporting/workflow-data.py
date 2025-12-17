@@ -11,31 +11,31 @@ Usage:
 
 Examples:
     # List recent workflow runs (all workflows)
-    workflow-data.py list-runs rbwatson to-do-service-auto
+    workflow-data.py list-runs <github-account> <repo>
     
     # Filter to specific workflow
-    workflow-data.py list-runs rbwatson to-do-service-auto --workflow pr-validation.yml
+    workflow-data.py list-runs <github-account> <repo> --workflow pr-validation.yml
     
     # List runs from last 14 days
-    workflow-data.py list-runs rbwatson to-do-service-auto --days 14
+    workflow-data.py list-runs <github-account> <repo> --days 14
     
     # Return only specific fields
-    workflow-data.py list-runs rbwatson to-do-service-auto --fields "id,name,conclusion,created_at"
+    workflow-data.py list-runs <github-account> <repo> --fields "id,name,conclusion,created_at"
     
     # Get run with specific fields (including nested)
-    workflow-data.py get-run rbwatson to-do-service-auto 12345678 --fields "id,name,actor.login"
+    workflow-data.py get-run <github-account> <repo> <run-id> --fields "id,name,actor.login"
     
     # List all jobs in a run
-    workflow-data.py list-jobs rbwatson to-do-service-auto 12345678
+    workflow-data.py list-jobs <github-account> <repo> <run-id>
     
     # List jobs with specific fields
-    workflow-data.py list-jobs rbwatson to-do-service-auto 12345678 --fields "id,name,conclusion"
+    workflow-data.py list-jobs <github-account> <repo> <run-id> --fields "id,name,conclusion"
     
     # Get detailed job information
-    workflow-data.py get-job rbwatson to-do-service-auto 98765432
+    workflow-data.py get-job <github-account> <repo> <job-id>
     
     # Get timing information for a run
-    workflow-data.py timing rbwatson to-do-service-auto 12345678
+    workflow-data.py timing <github-account> <repo> <run-id>
 """
 
 import sys

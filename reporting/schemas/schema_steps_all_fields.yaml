@@ -5,7 +5,7 @@
 # Use this schema with the get-job command to get all step data for a specific job
 #
 # Example usage:
-#   workflow-data.py get-job rbwatson repo 12345678 \
+#   workflow-data.py get-job <github-account> <repo> <run-id> \
 #     --format csv --schema schema_steps_all_fields.yaml
 
 steps_all_fields:
