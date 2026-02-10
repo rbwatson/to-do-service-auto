@@ -10,18 +10,108 @@ This module provides common functions for:
 """
 
 import re
+import yaml
 from pathlib import Path
 from typing import Optional, Dict, Tuple, Any
 
-import yaml
-
 # Import help URLs from centralized config
 from help_urls import HELP_URLS
+
+def parse_front_matter_with_errors(content: str) -> Tuple[Optional[Dict[str, Any]], Optional[str], Optional[int]]:
+    """
+    Extract and parse YAML front matter from markdown content with detailed error reporting.
+    
+    Args:
+        content: Full markdown file content as string
+        
+    Returns:
+        Tuple of (metadata_dict, error_message, error_line)
+        - metadata_dict: Dictionary if successful, None if failed
+        - error_message: Detailed error description if failed, None if successful
+        - error_line: Line number where error occurred (for YAML errors), None otherwise
+        
+    Example:
+        >>> content = "---\\nlayout: default\\n---\\n# Heading"
+        >>> metadata, error, line = parse_front_matter_with_errors(content)
+        >>> metadata['layout']
+        'default'
+        
+        >>> content = "# No front matter"
+        >>> metadata, error, line = parse_front_matter_with_errors(content)
+        >>> print(error)
+        'No front matter found...'
+    """
+    # Check for front matter delimiters
+    # Spec: "---" must be at start of line (no leading whitespace)
+    # followed by optional whitespace and required newline
+    # Front matter is the text between the two delimiters
+    fm_match = re.match(r'^---[ \t]*\n(.*?)\n---[ \t]*\n?', content, re.DOTALL)
+    
+    if not fm_match:
+        # Provide helpful guidance based on what we found
+        
+        # Check for leading whitespace before ---
+        if re.match(r'^\s+---', content):
+            return None, (
+                "Front matter delimiter has leading whitespace. "
+                "The '---' must be at the start of the line with no spaces or tabs before it."
+            ), 1
+        
+        if content.strip().startswith('---'):
+            # Has opening delimiter but not closing
+            return None, (
+                "Front matter opening delimiter found but no closing delimiter could be found. "
+                "Ensure front matter ends with '---' on its own line."
+            ), 1
+        else:
+            # No front matter at all
+            return None, (
+                "No front matter found. Add YAML front matter between --- delimiters at the start of the file.\n"
+                "Example:\n"
+                "---\n"
+                "layout: default\n"
+                "description: Your description here\n"
+                "---"
+            ), 1
+    
+    # Try to parse YAML
+    try:
+        metadata = yaml.safe_load(fm_match.group(1))
+        return metadata, None, None
+    except yaml.YAMLError as e:
+        # Extract line number from YAML error if available
+        error_line = None
+        try:
+            if hasattr(e, 'problem_mark') and e.problem_mark is not None:
+                # YAML parser provides line/column info
+                # problem_mark.line is 0-indexed, +1 for 1-indexed, +1 for opening ---
+                error_line = e.problem_mark.line + 2  # type: ignore[attr-defined]
+        except (AttributeError, TypeError):
+            # If we can't get line number, that's okay, too.
+            pass
+        
+        # Build helpful error message
+        error_msg = f"Invalid YAML syntax in front matter: {str(e)}"
+        
+        if error_line:
+            error_msg += f"\nError on or near line {error_line}."
+        
+        error_msg += (
+            "\n\nCommon YAML issues:\n"
+            "- Inconsistent indentation (use spaces, not tabs)\n"
+            "- Unclosed quotes or brackets\n"
+            "- Missing colons after keys"
+        )
+        
+        return None, error_msg, error_line
 
 
 def parse_front_matter(content: str) -> Optional[Dict[str, Any]]:
     """
     Extract and parse YAML front matter from markdown content.
+    
+    This is the backward-compatible version that only returns the metadata dict.
+    For detailed error reporting, use parse_front_matter_with_errors() instead.
     
     Args:
         content: Full markdown file content as string
@@ -35,15 +125,8 @@ def parse_front_matter(content: str) -> Optional[Dict[str, Any]]:
         >>> metadata['layout']
         'default'
     """
-    # Match front matter between --- delimiters at start of file
-    fm_match = re.match(r'^---\s*\n(.*?)\n---\s*\n', content, re.DOTALL)
-    if not fm_match:
-        return None
-    
-    try:
-        return yaml.safe_load(fm_match.group(1))
-    except yaml.YAMLError:
-        return None
+    metadata, _, _ = parse_front_matter_with_errors(content)
+    return metadata
 
 
 def read_markdown_file(filepath: Path) -> Optional[str]:
@@ -61,7 +144,7 @@ def read_markdown_file(filepath: Path) -> Optional[str]:
         >>> content = read_markdown_file(Path('README.md'))
         >>> if content:
         ...     print(f"Read {len(content)} characters")
-        
+
     Note:
         Errors are logged but not raised. Caller should check for None.
     """

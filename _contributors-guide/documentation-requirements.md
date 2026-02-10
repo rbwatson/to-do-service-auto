@@ -174,7 +174,9 @@ Configured in `.vale.ini`:
 
 - All files in `/docs/` directory must have YAML front matter
 - Front matter must be between `---` delimiters at start of file
-- Files with `<!-- front matter not required -->` comment:
+- Front matter delimiters must start at the beginning of the line
+- Front matter delimiters must be the only characters in the line
+- Files with `<!-- front matter not required -->` comment in the first 5 lines of the file:
     - If in `/docs/`: An error, front matter is required
     - If in `/assignments/`: a warning, front matter is recommended
     - If elsewhere: Silently skipped

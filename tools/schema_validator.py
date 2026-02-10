@@ -243,7 +243,7 @@ def validate_front_matter_schema(
         log("Front matter validation errors found:", "error", file_path, None, use_actions, action_level)
         for error_msg in errors:
             log(f"  - {error_msg}", "error", file_path, None, use_actions, action_level)
-        log(f"📖 Help: {HELP_URLS['front_matter']}", "info")
+        log(f"-  Help: {HELP_URLS['front_matter']}", "info")
     
     # Report warnings
     if warnings:

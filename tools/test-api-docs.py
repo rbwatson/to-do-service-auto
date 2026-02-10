@@ -27,7 +27,7 @@ import argparse
 from pathlib import Path
 from typing import Optional, Dict, Tuple, List, Any
 
-from doc_test_utils import read_markdown_file, parse_front_matter, log, HELP_URLS
+from doc_test_utils import read_markdown_file, parse_front_matter_with_errors, log, HELP_URLS
 from schema_validator import validate_front_matter_schema, DEFAULT_SCHEMA_PATH
 
 # Configuration constants
@@ -422,7 +422,7 @@ def test_example(
         log(f"Could not find example '{example_name}' or it is not formatted correctly", 
             "warning", file_path, None, use_actions, action_level)
         log(f"Expected format: '### {example_name} request' section with bash code block", "info")
-        log(f"📖 Help: {HELP_URLS['example_format']}", "info")
+        log(f"-  Help: {HELP_URLS['example_format']}", "info")
         return False
     
     log(f"  Command: {curl_cmd[:80]}...", "info")
@@ -462,7 +462,7 @@ def test_example(
         log(f"Could not find documented response for '{example_name}' or it is not formatted correctly", 
             "warning", file_path, None, use_actions, action_level)
         log(f"Expected format: '### {example_name} response' section with json code block", "info")
-        log(f"📖 Help: {HELP_URLS['example_format']}", "info")
+        log(f"-  Help: {HELP_URLS['example_format']}", "info")
         return False
     
     # Compare actual vs expected
@@ -523,11 +523,11 @@ def test_file(
         return 0, 0, 0
     
     # Extract and parse front matter
-    metadata = parse_front_matter(content)
+    metadata, error_message, error_line = parse_front_matter_with_errors(content)
     if not metadata:
         log("Front matter is required for all documentation files", 
-            "error", file_path, None, use_actions, action_level)
-        log(f"📖 Help: {HELP_URLS['front_matter']}", "info")
+            "error", file_path, error_line, use_actions, action_level)
+        log(f"-  Help: {HELP_URLS['front_matter']}", "info")
         return 0, 0, 0
     
     # Validate front matter against schema
