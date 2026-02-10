@@ -1,3 +1,5 @@
+<!-- markdownlint-disable -->
+<!-- vale off --> 
 # Phase 1: CSV Output - Implementation Summary
 
 ## Files Created

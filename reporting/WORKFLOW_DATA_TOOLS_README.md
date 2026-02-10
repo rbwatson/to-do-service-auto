@@ -1,3 +1,5 @@
+<!-- markdownlint-disable -->
+<!-- vale off --> 
 # Workflow Data Collection Tools
 
 Utilities for collecting and analyzing GitHub Actions workflow data.

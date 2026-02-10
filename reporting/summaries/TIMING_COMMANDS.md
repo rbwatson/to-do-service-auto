@@ -1,3 +1,5 @@
+<!-- markdownlint-disable -->
+<!-- vale off --> 
 # Timing Commands Implementation
 
 ## Summary

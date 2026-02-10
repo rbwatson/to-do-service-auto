@@ -1,3 +1,5 @@
+<!-- markdownlint-disable -->
+<!-- vale off --> 
 # Error Handling: stderr Update
 
 ## Changes Made

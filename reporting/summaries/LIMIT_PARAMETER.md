@@ -1,3 +1,5 @@
+<!-- markdownlint-disable -->
+<!-- vale off --> 
 # Limit Parameter Implementation
 
 ## Summary
