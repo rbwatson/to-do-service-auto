@@ -1,5 +1,35 @@
+---
+# markdownlint-disable
+# vale off
+# tags used by just-the-docs theme
+layout: default
+parent: Contributing
+nav_order: 1
+has_children: false
+has_toc: false
+# tags used by AI files
+description: "Information about how to write new documentation topics"
+topic_type: reference
+tags: 
+    - docs
+categories: 
+    - doc-contributions
+ai_relevance: low
+importance: 4
+prerequisites: []
+related_pages: 
+    - /before-you-start-a-tutorial
+examples: []
+api_endpoints: []
+version: "v1.0"
+last_updated: "2026-03-01"
+# vale  on
+# markdownlint-enable
+---
+
+# Writer's guide
+
 <!-- vale Google.Colons = NO -->
-# Documentation contributor guide
 
 This guide helps you create and edit documentation that passes automated validation.
 

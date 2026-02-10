@@ -1,9 +1,36 @@
-# Validation errors reference
+---
+# markdownlint-disable
+# vale off
+# tags used by just-the-docs theme
+layout: default
+parent: Contributing
+nav_order: 3
+has_children: false
+has_toc: false
+# tags used by AI files
+description: "Information about how to handle contribution validation errors"
+topic_type: reference
+tags: 
+    - docs
+categories: 
+    - doc-contributions
+ai_relevance: low
+importance: 4
+prerequisites: []
+related_pages: 
+    - /before-you-start-a-tutorial
+examples: []
+api_endpoints: []
+version: "v1.0"
+last_updated: "2026-03-01"
+# vale  on
+# markdownlint-enable
+---
+
+# Fixing validation errors
 
 This table lists all problems reported by the PR validation workflow.
 
-<!-- vale Google.Contractions = NO -->
-<!-- vale Google.Passive = NO -->
 <!-- vale Google.Parens = NO -->
 <!-- vale write-good = NO -->
 
@@ -13,7 +40,7 @@ This table lists all problems reported by the PR validation workflow.
 | Problem | Severity | Message | Help link |
 | --------- | ---------- | --------- | ----------- |
 | **File location** |
-| Files modified outside allowed directories (non-admin user) | Error | Only files in /docs/ and /assignments/ can be modified by students. | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/File-Locations> |
+| Files modified outside allowed directories (non-admin user) | Error | Students can only modify files in `/docs/` and `/assignments/`. | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/File-Locations> |
 | **Filename** |
 | Filename contains unsafe characters | Error | Found N unsafe filenames in changed-files list | None |
 | **Commit structure** |
@@ -21,8 +48,8 @@ This table lists all problems reported by the PR validation workflow.
 | Multiple commits in PR | Error | PR must contain exactly one commit; found N | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Squashing-Commits> |
 | PR contains merge commits | Error | PR contains merge commits; found N | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Avoiding-Merge-Commits> |
 | **Front matter** |
-| Front matter required but has skip comment (docs directory) | Error | Front matter is required for files in /docs directory | None |
-| Front matter recommended but has skip comment (assignments) | Warning | Front matter is recommended for assignment files | None |
+| Front matter required but has skip comment (docs directory) | Error | Files in `/docs` directory require front matter | None |
+| Front matter recommended but has skip comment (assignments) | Warning | Files in `/assignments` directory should include front matter | None |
 | No front matter found | Error | No front matter found | None |
 | Front matter validation failed (schema errors) | Error | \[Specific schema violation details\] | None |
 | Description too short | Error | Description must be at least 10 characters | None |
@@ -44,12 +71,12 @@ This table lists all problems reported by the PR validation workflow.
 | Passive voice | Error | \[Line N\] Use active voice | None |
 | Gendered pronouns | Error | \[Line N\] Use gender-neutral pronouns | None |
 | **API examples** |
-| Example not found or malformed | Warning | Could not find example '\[name\]' or it is not formatted correctly | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Example-Format> |
+| Example not found or malformed | Warning | Couldn't find example '\[name\]' or it's not formatted correctly | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Example-Format> |
 | Example execution failed | Error | Example '\[name\]' failed: \[error details\] | None |
 | Wrong HTTP status code | Error | Example '\[name\]' failed: Expected HTTP \[code\], got \[actual\] | None |
-| Response not valid JSON | Error | Example '\[name\]' failed: Response is not valid JSON | None |
-| Response section not found | Warning | Could not find documented response for '\[name\]' or it is not formatted correctly | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Example-Format> |
-| Response doesn't match documentation | Error | Example '\[name\]' failed: Response does not match documentation | None |
+| Response not valid JSON | Error | Example '\[name\]' failed: Response isn't valid JSON | None |
+| Response section not found | Warning | Couldn't find documented response for '\[name\]' or it's not formatted correctly | <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Example-Format> |
+| Response doesn't match documentation | Error | Example '\[name\]' failed: Response doesn't match documentation | None |
 | No valid test configuration | Info | Skipping \[file\] (no valid test configuration) | None |
 | **Server** |
 | json-server failed to start | Error | json-server failed to start | None |
@@ -66,9 +93,9 @@ This table lists all problems reported by the PR validation workflow.
 
 ### Severity levels
 
-**Error** - Validation fails, PR cannot be merged until fixed
+**Error** - Validation fails, unable to merge PR until fixed
 
-**Warning** - Validation passes but issue should be addressed
+**Warning** - Validation passes but still has issues to address
 
 **Info** - Informational message, no action required
 
@@ -116,13 +143,13 @@ Rules come from these style packages:
 
 API test errors include additional context in the console output:
 
-- The curl command that was executed
+- The curl command used
 - The actual HTTP status code received
 - Specific JSON differences between actual and expected responses
 - JSON path notation for mismatched fields
 
 ### Tool test failures
 
-If validation tool tests fail (when tools directory is modified),
+If validation tool tests fail,
 the pytest output shows which tests failed and why.
-This must be fixed before any other validation runs.
+Fix broken tools to continue with other validation runs.

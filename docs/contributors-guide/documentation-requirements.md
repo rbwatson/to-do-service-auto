@@ -1,25 +1,51 @@
-<!-- vale Google.Headings = NO -->
-<!-- vale Google.Parens = NO -->
+---
+# markdownlint-disable
+# vale off
+# tags used by just-the-docs theme
+layout: default
+parent: Contributing
+nav_order: 2
+has_children: false
+has_toc: false
+# tags used by AI files
+description: "Information about how to contribute new and updated documentation topics"
+topic_type: reference
+tags: 
+    - docs
+categories: 
+    - doc-contributions
+ai_relevance: low
+importance: 4
+prerequisites: []
+related_pages: 
+    - /before-you-start-a-tutorial
+examples: []
+api_endpoints: []
+version: "v1.0"
+last_updated: "2026-03-01"
+# vale  on
+# markdownlint-enable
+---
 
-# Documentation Requirements (From PR Validation Workflow)
+# Documentation requirements
 
 <!-- vale Google.Colons = NO -->
-<!-- vale Google.Passive = NO -->
+<!-- vale Google.Parens = NO -->
 <!-- vale write-good = NO -->
 
 This document lists all requirements tested in the `pr-validation.yml` GitHub workflow.
 These are the rules that documentation must follow to pass automated validation.
 
-## File Location Requirements
+## File location requirements
 
-### Allowed Directories
+### Allowed directories
 
 - Documentation files: `docs/**/*.md`
 - Assignment files: `assignments/**/*.md`
 
 ### Restriction
 
-- Students (non-admin, non-write permission users) can only modify files in `/docs/` and `/assignments/`
+- Students (non-admin, non-write permission users) can only change files in `/docs/` and `/assignments/`
 - Changes to other directories require admin or write permissions
 
 **Violation Result:** PR validation fails with error
@@ -27,9 +53,9 @@ These are the rules that documentation must follow to pass automated validation.
 
 ---
 
-## Filename Requirements
+## Filename requirements
 
-### Character Restrictions
+### Character restrictions
 
 Filenames must not contain:
 
@@ -44,9 +70,9 @@ Filenames must not contain:
 
 ---
 
-## Commit Requirements
+## Commit requirements
 
-### Commit Count
+### Commit count
 
 - PR must contain exactly 1 commit
 - No more, no less
@@ -54,7 +80,7 @@ Filenames must not contain:
 **Violation Result:** Error with message showing actual count
 **Help Link:** `https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Squashing-Commits`
 
-### Merge Commits
+### Merge commits
 
 - PR must not contain any merge commits
 - Use rebase instead
@@ -62,7 +88,7 @@ Filenames must not contain:
 **Violation Result:** Error with message showing merge commit count
 **Help Link:** `https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Avoiding-Merge-Commits`
 
-### Branch Status
+### Branch status
 
 - Warning, if PR branch isn't up to date with base branch
 - Recommendation to rebase
@@ -72,33 +98,33 @@ Filenames must not contain:
 
 ---
 
-## Markdown Linting Requirements
+## Markdown linting requirements
 
-### MarkdownLint Rules
+### MarkdownLint rules
 
 Configured in `.github/config/.MarkdownLint.jsonc`:
 
-#### MD007: Unordered list indentation
+#### `MD007: Unordered list indentation`
 
 - Required indent: 4 spaces
 
-#### MD013: Line length
+#### `MD013: Line length`
 
-- Maximum: 100 characters
+- No longer than 100 characters
 
-#### MD036: Emphasis used instead of heading
+#### `MD036: Emphasis used instead of heading`
 
 - Disabled
 
-#### MD049: Emphasis style
+#### `MD049: Emphasis style`
 
 - Required style: underscore (`_italic_`)
 
-#### MD050: Strong style
+#### `MD050: Strong style`
 
 - Required style: asterisk (`**bold**`)
 
-#### MD060: Link style
+#### `MD060: Link style`
 
 - Required style: compact
 
@@ -107,25 +133,25 @@ Configured in `.github/config/.MarkdownLint.jsonc`:
 
 ---
 
-## Vale (Writing Style) Requirements
+## Vale requirements
 
 Configured in `.vale.ini`:
 
-### Enabled Style Packages
+### Enabled style packages
 
 - Vale (core rules)
 - Google Developer Documentation Style Guide
 - write-good (readability checks)
-- Readability (various readability metrics)
+- Readability (readability metrics)
 
-### Specific Settings
+### Specific settings
 
-#### Ignored Scopes
+#### Ignored scopes
 
 - `code` blocks
 - `tt` (teletype) elements
 
-#### Skipped Scopes
+#### Skipped scopes
 
 - `script` tags
 - `style` tags
@@ -133,12 +159,12 @@ Configured in `.vale.ini`:
 - `figure` elements
 - `text.frontmatter` (YAML front matter)
 
-#### Alert Level
+#### Alert level
 
-- Minimum: suggestion
-- All suggestions, warnings, and errors are reported
+- Minimum: `suggestion`
+- Reports all suggestions, warnings, and errors
 
-#### Enabled Rules
+#### Enabled rules
 
 - `Vale.terms`: verifies project terminology
 - `Google.*`: All Google style guide rules
@@ -146,7 +172,7 @@ Configured in `.vale.ini`:
 - `Readability.FleschKincaid`: checks reading level (complexity)
 - Other readability metrics: NO
 
-#### Disabled Rules
+#### Disabled rules
 
 - `write-good.E-Prime`: Disabled (allows "to be" verbs)
 - `Readability.AutomatedReadability`: Disabled
@@ -156,7 +182,7 @@ Configured in `.vale.ini`:
 - `Readability.LIX`: Disabled
 - `Readability.SMOG`: Disabled
 
-### Custom Vocabulary
+### Custom vocabulary
 
 - Location: `.github/valeStyles/projectTerms/`
 - Project-specific approved terms
@@ -168,7 +194,7 @@ Configured in `.vale.ini`:
 
 ---
 
-## Front Matter Requirements
+## Front matter requirements
 
 ### Presence
 
@@ -181,9 +207,9 @@ Configured in `.vale.ini`:
     - If in `/assignments/`: a warning, front matter is recommended
     - If elsewhere: Silently skipped
 
-**Violation Result:** Error, file can't be tested
+**Violation Result:** Error, can't test file
 
-### Required Fields
+### Required fields
 
 As defined in `.github/schemas/front-matter-schema.json`:
 
@@ -191,37 +217,37 @@ As defined in `.github/schemas/front-matter-schema.json`:
 - `description`: string, 10-200 characters
 - `topic_type`: string, must be `reference`, `tutorial`, `guide`, `concept`, or `overview`
 
-### Optional Standard Fields
+### Optional standard fields
 
-#### Navigation/Structure
+#### Navigation and structure
 
 - `parent`: string, exact match to parent page title
 - `has_children`: Boolean, indicates if page has child pages
 - `has_toc`: Boolean, indicates if page should show table of contents
 - `nav_order`: integer, minimum 1 (lower numbers appear first)
 
-#### Content Classification
+#### Content classification
 
 - `tags`: array of strings, unique values
 - `categories`: array of strings, unique values
 - `ai_relevance`: string, must be `high`, `medium`, or `low`
 - `importance`: integer, 1-10
 
-#### Documentation Structure
+#### Documentation structure
 
 - `prerequisites`: array of strings (page titles or concepts)
 - `related_pages`: array of strings (page titles)
 - `examples`: array of strings (example names for AI indexing)
 
-#### API-Specific
+#### API-specific
 
 - `api_endpoints`: array of strings matching pattern `^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)? ?/.+`
 - `version`: string matching pattern `^v[0-9]+\.[0-9]+(\.[0-9]+)?$`
 - `last_updated`: string, date format
 
-### Test Configuration (Optional)
+### Test configuration
 
-Used when file contains testable API examples:
+Optional. Used when file contains testable API examples:
 
 ```yaml
 test:
@@ -236,9 +262,9 @@ test:
     - "POST example / 201,204"
 ```
 
-#### Test Field Rules
+#### Test field rules
 
-- If `test` object exists, `testable` array is REQUIRED
+- If `test` object exists, the test configuration must have a `testable` array
 - `test_apps` pattern: `^[a-zA-Z0-9_-]+(@[0-9]+\.[0-9]+\.[0-9]+)?$`
 - `server_url` pattern: `^(https?://)?([a-zA-Z0-9.-]+|localhost)(:[0-9]+)?$`
 - `local_database` pattern: `^(/)?[a-zA-Z0-9/_.-]+\.json$`
@@ -251,27 +277,27 @@ test:
 
 ---
 
-## API Documentation Testing Requirements
+## API documentation testing requirements
 
-### When Tests Run
+### When tests run
 
 - Only runs if files in `docs/` or `assignments/` changed
 - Only runs if Markdown linting passed
 - Only runs if file has valid front matter with `test` configuration
 
-### Test Discovery
+### Test discovery
 
 1. Check for `<!-- front matter not required -->` comment (see Front Matter requirements)
 2. Parse front matter
-3. Validate against schema
+3. Compare against schema
 4. Check for `test` object with `testable` array
 5. Skip files without testable examples
 
-### Example Format Requirements
+### Example format requirements
 
 For each item in `test.testable` array, the Markdown must contain:
 
-#### Request Section
+#### Request section
 
 - Heading: `### {example_name} request` or `#### {example_name} request`
     - Example name can have words wrapped in backticks: `` `GET` example ``
@@ -282,7 +308,7 @@ For each item in `test.testable` array, the Markdown must contain:
 
 **Format Help:** <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Example-Format>
 
-#### Response Section
+#### Response section
 
 - Heading: `### {example_name} response` or `#### {example_name} response`
     - Same flexible matching as request section
@@ -292,9 +318,9 @@ For each item in `test.testable` array, the Markdown must contain:
 
 **Format Help:** <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/Example-Format>
 
-### Test Execution
+### Test execution
 
-#### Database Setup
+#### Database setup
 
 - Test server: json-server@0.17.4 on port 3000
 - Database reset: Before testing each file
@@ -302,7 +328,7 @@ For each item in `test.testable` array, the Markdown must contain:
 - Default: `api/to-do-db-source.json` if not specified
 - Format: JSON file with REST resources
 
-#### Request Execution
+#### Request execution
 
 1. Extract curl command from request section
 2. Add `-i` flag if not present (to get headers)
@@ -310,14 +336,14 @@ For each item in `test.testable` array, the Markdown must contain:
 4. Execute with 10-second timeout
 5. Parse HTTP status code from response headers
 
-#### Response Validation
+#### Response validation
 
 1. Check status code is in expected list
-2. Validate response is valid JSON
+2. Ensure response is valid JSON
 3. Compare response structure with documented response
 4. Report specific differences if mismatch
 
-### Comparison Rules
+### Comparison rules
 
 - Type checking: actual and expected must have same type
 - Objects:
@@ -329,7 +355,7 @@ For each item in `test.testable` array, the Markdown must contain:
 - Primitives: Must match exactly
 - Differences reported with JSON path
 
-### Test Results
+### Test results
 
 - Error if curl command not found or malformed
 - Error if response section not found or malformed  
@@ -343,11 +369,11 @@ For each item in `test.testable` array, the Markdown must contain:
 
 ---
 
-## Markdown Survey (Informational)
+## Markdown survey
 
-Not a validation requirement but provides statistics:
+Not required, but provides these statistics:
 
-### Tracked Metrics
+### Tracked metrics
 
 - Number of files processed
 - Heading count per file
@@ -359,18 +385,18 @@ Not a validation requirement but provides statistics:
 
 ---
 
-## Linter Exception Tracking
+## Linter exception tracking
 
 Documents use of linter exception comments:
 
-### Vale Exceptions
+### Vale exceptions
 
 Format: `<!-- vale RuleName = NO -->`
 
 - Tracked and reported
 - Not a validation error
 
-### MarkdownLint Exceptions
+### MarkdownLint exceptions
 
 Format: `<!-- markdownlint-disable MD### -->`
 
@@ -382,54 +408,54 @@ Format: `<!-- markdownlint-disable MD### -->`
 
 ---
 
-## Validation Stages and Dependencies
+## Validation stages and dependencies
 
-### Stage 0: Discover Changed Files
+### Stage 0: discover changed files
 
 - Identifies all changed Markdown files
-- Separates by directory (docs vs tools)
+- Separates docs from tools
 - Flags unauthorized changes
 
-### Stage 1: Test Tools (Blocking)
+### Stage 1: Test tools
 
-- Runs if any files in `tools/` changed
+- Runs if any files in `tools/` have changed
 - Runs pytest on `tools/tests/`
 - **All other stages blocked if this fails**
 
-### Stage 2: Lint and Validate Content (Parallel)
+### Stage 2: Lint and validate content
 
-- Depends on: Test Tools (success or skipped)
+- Depends on: `Test Tools` passing
 - Runs if: Any Markdown files changed
 - Sub-checks:
     - Filename validation
-    - Linter exception listing (informational)
-    - Markdown survey (informational)
+    - Linter exception listing
+    - Markdown survey
     - MarkdownLint validation
     - Vale validation
 
-### Stage 3: Test API Documentation
+### Stage 3: Test API documentation
 
-- Depends on: Lint and Validate Content (success)
-- Runs if: Files in `docs/` or `assignments/` changed
-- Tests API examples against live server
+- Depends on: `Lint and Validate Content` test passing
+- Runs if: Files in `docs/` or `assignments/` have changed
+- Tests API examples against test server
 
-### Stage 4: Validate Commits (Final Gate)
+### Stage 4: Check number of commits
 
-- Depends on: Lint and Validate Content (success or skipped) and
-    the Test API Documentation (success or skipped)
+- Depends on: `Lint and Validate Content` and
+    the `Test API Documentation` passing
 - Always runs as final check
 - Sub-checks:
-    - Unauthorized file changes (permission-based)
-    - Feature branch status compared to original branch (warning only)
+    - Unauthorized file changes
+    - Feature branch status compared to original branch
     - Commit count and merge commits
 
 **Failure Behavior:** Fail-fast - if earlier stage fails, dependent stages don't run
 
 ---
 
-## Tool Locations
+## Tool locations
 
-### Python Scripts
+### Python scripts
 
 - `tools/test-filenames.py` - Filename validation
 - `tools/list-linter-exceptions.py` - Exception tracking
@@ -439,27 +465,27 @@ Format: `<!-- markdownlint-disable MD### -->`
 - `tools/schema_validator.py` - Front matter schema validation
 - `tools/get-database-path.py` - Extract database path from front matter
 
-### Configuration Files
+### Configuration files
 
 - `.github/config/.MarkdownLint.jsonc` - MarkdownLint rules
 - `.vale.ini` - Vale configuration
 - `.github/schemas/front-matter-schema.json` - Front matter schema
 - `.github/valeStyles/` - Custom Vale styles and vocabulary
 
-### GitHub Actions
+### GitHub actions
 
 - `.github/workflows/pr-validation.yml` - Main validation workflow
 
 ---
 
-## Exit Codes and Results
+## Exit codes and results
 
 ### Success
 
 - All checks pass
-- PR can be merged
+- OK to merge PR
 
-### Failure Scenarios
+### Failure scenarios
 
 1. **Tool tests fail** - Fix tools before proceeding
 2. **Filename invalid** - Rename file to remove special characters
@@ -468,36 +494,10 @@ Format: `<!-- markdownlint-disable MD### -->`
 5. **Schema validation fails** - Fix front matter structure
 6. **API tests fail** - Fix example code or expected responses
 7. **Unauthorized files** - Remove changes to restricted directories
-8. **Multiple commits** - Squash into single commit
+8. **Too many commits** - Squash into single commit
 9. **Merge commits** - Rebase to remove merge commits
 
-### Help Resources
+### Help resources
 
 - GitHub Wiki: <https://github.com/UWC2-APIDOC/to-do-service-auto/wiki/>
 - Specific pages linked in error messages
-
----
-
-## Performance Optimizations
-
-### Caching
-
-- Vale binary cached (3.12.0)
-- Python pip dependencies cached
-
-### Batch Processing
-
-- Filename validation: All files in one call
-- Linter exception listing: All files in one call
-- Markdown survey: All files in one call
-- MarkdownLint: All files in one call
-- Vale: All files in one call
-
-### Conditional Execution
-
-- Tools tests: Only if tools changed
-- Markdown linting: Only if Markdown files changed
-- API testing: Only if docs/assignments changed
-- Each stage skips if dependencies failed
-
-**Result:** Faster feedback, lower resource usage
