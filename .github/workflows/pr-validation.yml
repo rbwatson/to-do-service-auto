@@ -197,22 +197,12 @@ jobs:
           vale ls-config
 
       - name: Run Vale
-        working-directory: ${{ github.workspace }}
-        run: |
-          echo "Working directory: $(pwd)"
-          echo "Repository files:"
-          ls -la
-          
-          files="${{ needs.discover-changes.outputs.all_md_files }}"
-          files_space="${files//,/ }"
-          
-          echo "Files to check: $files_space"
-          
-          if [ -n "$files_space" ]; then
-            vale $files_space
-          else
-            echo "No files to lint"
-          fi
+        uses: errata-ai/vale-action@v2.1.1
+        with:
+          version: '3.12.0'
+          files: ${{ needs.discover-changes.outputs.all_md_files }}
+          separator: ','
+          fail_on_error: true
       
       - name: Summary
         if: always()
