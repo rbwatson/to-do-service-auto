@@ -179,7 +179,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.vale
-          key: vale-3.12.0
+          key: vale-3.13.1
       
       - name: Install Vale
         run: |
