@@ -48,8 +48,8 @@ Enjoy your visit.
 
 ## Start here
 
-- [Configure your system](./before-you-start-a-tutorial.md) correctly.
-    This makes it easier to create a documentation update that works with the existing content.
+- [Configure your system](https://github.com/UWC2-APIDOC/to-do-service-auto#contributing-documentation).
+    This makes it easier to update the documentation in a way that works with the existing content.
 
     While it's possible to make minor edits in the GitHub web site without installing the required software,
     **this isn't recommended**.

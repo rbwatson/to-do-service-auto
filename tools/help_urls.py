@@ -27,16 +27,16 @@ WIKI_BASE_URL = os.environ.get(
 # Help page URLs
 HELP_URLS = {
     # File and directory requirements
-    'file_locations': f"{WIKI_BASE_URL}/File-Locations",
+    'file_locations': f"{WIKI_BASE_URL}/File-locations",
     
     # Git and commit guidelines
-    'squashing_commits': f"{WIKI_BASE_URL}/Squashing-Commits",
-    'merge_commits': f"{WIKI_BASE_URL}/Avoiding-Merge-Commits",
-    'branch_update': f"{WIKI_BASE_URL}/Updating-Your-Branch",
+    'squashing_commits': f"{WIKI_BASE_URL}/Squashing-commits",
+    'merge_commits': f"{WIKI_BASE_URL}/Avoiding-merge-commits",
+    'branch_update': f"{WIKI_BASE_URL}/Updating-your-branch",
     
     # Documentation format requirements
-    'example_format': f"{WIKI_BASE_URL}/Example-Format",
-    'front_matter': f"{WIKI_BASE_URL}/Front-Matter-Format",
+    'example_format': f"{WIKI_BASE_URL}/Example-format",
+    'front_matter': f"{WIKI_BASE_URL}/Front-matter-format",
 }
 
 # For backward compatibility - direct access to individual URLs
