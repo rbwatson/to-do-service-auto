@@ -179,7 +179,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.vale
-          key: vale-3.13.1
+          key: vale-3.12.0
       
       - name: Install Vale
         run: |
@@ -197,12 +197,14 @@ jobs:
           vale ls-config
 
       - name: Run Vale
-        uses: errata-ai/vale-action@v2.1.1
-        with:
-          version: '3.12.0'
-          files: ${{ needs.discover-changes.outputs.all_md_files }}
-          separator: ','
-          fail_on_error: true
+        run: |
+          files="${{ needs.discover-changes.outputs.all_md_files }}"
+          files_space="${files//,/ }"
+          if [ -n "$files_space" ]; then
+            vale $files_space
+          else
+            echo "No files to lint"
+          fi
       
       - name: Summary
         if: always()
