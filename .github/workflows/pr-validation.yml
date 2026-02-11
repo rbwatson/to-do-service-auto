@@ -197,9 +197,17 @@ jobs:
           vale ls-config
 
       - name: Run Vale
+        working-directory: ${{ github.workspace }}
         run: |
+          echo "Working directory: $(pwd)"
+          echo "Repository files:"
+          ls -la
+          
           files="${{ needs.discover-changes.outputs.all_md_files }}"
           files_space="${files//,/ }"
+          
+          echo "Files to check: $files_space"
+          
           if [ -n "$files_space" ]; then
             vale $files_space
           else
