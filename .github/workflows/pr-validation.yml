@@ -134,6 +134,8 @@ jobs:
       always() && 
       (needs.test-tools.result == 'success' || needs.test-tools.result == 'skipped') &&
       needs.discover-changes.outputs.any_md_changed == 'true'
+    env:
+      CHANGED_FILES: ${{ needs.discover-changes.outputs.all_md_files }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -148,22 +150,29 @@ jobs:
       
       # Test filenames
       - name: Test filenames
-        env:
-          CHANGED_FILES: ${{ needs.discover-changes.outputs.all_md_files }}
-        run: python3 tools/test-filenames.py --action warning
+        run: |
+          echo "Files to be tested: $CHANGED_FILES"  
+          python3 tools/test-filenames.py --action warning
       
       # List linter exceptions (Phase 1 optimized)
+      - name: Prepare file lists
+        id: prepare-files
+        run: |
+          echo "Working directory: $(pwd)"
+          echo "## Environment Info" >> $GITHUB_STEP_SUMMARY
+          echo "Working directory: \`$(pwd)\`" >> $GITHUB_STEP_SUMMARY
+          files_space="${CHANGED_FILES//,/ }"
+          echo "files_space=$files_space" >> $GITHUB_STEP_SUMMARY
+
       - name: List linter exceptions
         run: |
-          files="${{ needs.discover-changes.outputs.all_md_files }}"
-          files_space="${files//,/ }"
+          files_space="${CHANGED_FILES//,/ }"
           python3 tools/list-linter-exceptions.py --action warning $files_space
       
       # Markdown survey (Phase 1 optimized)
       - name: Survey markdown
         run: |
-          files="${{ needs.discover-changes.outputs.all_md_files }}"
-          files_space="${files//,/ }"
+          files_space="${CHANGED_FILES//,/ }"
           python3 tools/markdown-survey.py --action warning $files_space
       
       # MarkdownLint
@@ -173,28 +182,6 @@ jobs:
           globs: ${{ needs.discover-changes.outputs.all_md_files }}
           config: .github/config/.markdownlint.jsonc
           separator: ','
-      
-      # Vale (with caching)
-      - name: Cache Vale
-        uses: actions/cache@v3
-        with:
-          path: ~/.vale
-          key: vale-3.12.0
-      
-      - name: Install Vale
-        run: |
-          if [ ! -f ~/.vale/vale ]; then
-            mkdir -p ~/.vale
-            wget https://github.com/errata-ai/vale/releases/download/v3.12.0/vale_3.12.0_Linux_64-bit.tar.gz
-            tar -xvzf vale_3.12.0_Linux_64-bit.tar.gz
-            mv vale ~/.vale/
-          fi
-          sudo ln -sf ~/.vale/vale /usr/local/bin/vale
-          vale --version
-
-      - name: Show Vale config  
-        run: |
-          vale ls-config
 
       - name: Run Vale
         uses: errata-ai/vale-action@v2.1.1
