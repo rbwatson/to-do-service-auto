@@ -11,7 +11,17 @@ has_toc: false
 # markdownlint-enable
 ---
 
-# my mermaid diagram
+# My mermaid diagram
+
+Here is a simple flow chart:
+
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
 
 ```mermaid
 flowchart TD
