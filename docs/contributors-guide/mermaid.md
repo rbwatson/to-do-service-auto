@@ -13,7 +13,13 @@ has_toc: false
 
 # My mermaid diagram
 
-Here is a simple flow chart:
+## My mermaid info
+
+```mermaid
+  info
+```
+
+## Here is a simple flow chart
 
 ```mermaid
 graph TD;
@@ -22,6 +28,8 @@ graph TD;
     B-->D;
     C-->D;
 ```
+
+## Here's a fancy flow chart
 
 ```mermaid
 flowchart TD
